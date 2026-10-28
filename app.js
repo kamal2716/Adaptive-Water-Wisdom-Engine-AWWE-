@@ -148,6 +148,7 @@ function renderChart(id,labels,sets){
     e.preventDefault();
     state.reports.unshift({id:state.nextReportId++,type:$("#report-type").value,pin:$("#report-pin").value.trim(),detail:$("#report-detail").value.trim(),date:new Date().toLocaleString(),audience:state.role,status:"Received",reply:"",replyDate:""});
     refresh();
+    const msg=$("#form-status");if(msg)msg.textContent="Report submitted to the demo authority inbox. Replies will appear in your own workspace.";
    });
   }
   function refresh(){const root=$("#dash-panel");if(root){root.innerHTML=panel();bindPanel();charts();}}
