@@ -14,3 +14,14 @@
 .report-privacy-note{display:flex;align-items:start;gap:10px;margin-bottom:13px;padding:12px 14px;border-radius:11px;background:#eaf0e2;border:1px solid #dce6d5}.report-privacy-note>span{font-size:15px}.report-privacy-note p{font-size:10px;line-height:1.65;color:#687a69;margin:0}.report-privacy-note strong{color:#345b43}
 .empty-state{display:grid;justify-items:center;text-align:center;padding:25px 12px;color:#738173}.empty-icon{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:#e8efdf;color:#437252;margin-bottom:9px}.empty-state strong{font:700 12px Manrope,sans-serif;color:#385341}.empty-state p{font-size:10px;margin:5px 0 0}
 @media(max-width:620px){.report-toolbar{align-items:stretch}.report-toolbar label,.report-toolbar select{width:100%}.report-card{padding:12px}.report-card-head{align-items:start}.report-audience{display:block;margin:6px 0 0}.authority-actions .form-button{width:100%}}
+
+/* Repository-derived PIN selector and district PIN list */
+.location-bar select#postcode{min-width:250px;max-width:100%;border:1px solid #d6ddce;background:#fffdf7;border-radius:8px;padding:8px 10px;font-size:10px;color:var(--ink);outline:none}
+.location-bar select#postcode:focus{border-color:var(--green);box-shadow:0 0 0 3px #80a98722}
+.authority-location{display:grid;grid-template-columns:1fr;align-items:start;gap:9px}
+.authority-location>label{font-size:10px;font-weight:700;color:#5c6f60}
+.pin-chips{display:flex;flex-wrap:wrap;gap:7px}
+.pin-chip{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:1px solid #d6dfce;background:#fffdf7;color:#356b54;border-radius:8px;padding:7px 9px;font-size:10px;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s}
+.pin-chip small{font-size:8px;color:#758576;font-weight:500;white-space:normal}
+.pin-chip:hover,.pin-chip:focus-visible{background:#e3edda;border-color:#9fbb9b;outline:none}
+.authority-location>span{font-size:9px;color:#7b8979}
