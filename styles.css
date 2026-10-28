@@ -25,3 +25,6 @@
 .pin-chip small{font-size:8px;color:#758576;font-weight:500;white-space:normal}
 .pin-chip:hover,.pin-chip:focus-visible{background:#e3edda;border-color:#9fbb9b;outline:none}
 .authority-location>span{font-size:9px;color:#7b8979}
+
+/* Historical chart month-range controls */
+.chart-area{min-width:0}.chart-controls{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:0 0 12px;padding:9px 10px;background:#f5f5ec;border:1px solid #e8e8dc;border-radius:9px}.chart-controls label{font-size:9px;font-weight:700;color:#718071}.chart-controls select{min-width:100px;max-width:135px;padding:6px 8px;border:1px solid #dce1d4;border-radius:7px;background:#fffdf7;color:#324d3d;font-size:10px}.chart-controls button{margin-left:auto;border:1px solid #cddbc8;border-radius:7px;padding:6px 9px;background:#e5eddf;color:#356b54;font-size:9px;font-weight:700;cursor:pointer}.chart-controls button:hover{background:#d9e6d1}@media(max-width:620px){.chart-controls{gap:6px}.chart-controls label{width:auto}.chart-controls select{flex:1;min-width:95px;max-width:none}.chart-controls button{margin-left:0}}
