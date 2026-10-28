@@ -10,7 +10,7 @@ Open [index.html](./index.html) in a browser, or serve the repository root with 
 - **Farmers:** tank storage context, a simple risk interpretation, and prioritised precautions for irrigation, drainage and water conservation.
 - **Water authorities:** tank cascade overview, channel metadata and restoration signals, scenario comparison and review/approval workflow.
 - **Trends & outlook:** illustrative charts and interactive hypothetical sliders.
-- **Feedback & reports:** a browser-session-only prototype of the receive → verify → resolve feedback loop.
+- **Feedback & reports:** audience-tagged household/farmer reports, an authority inbox with audience filters, report status controls, direct replies, and PIN/eri selection from repository metadata. Reports and replies currently persist only for the active browser session.
 
 ## Source data and limitations
 The existing project files (UKM project PDF, outline PDF, report DOCX and CSVs) are preserved unchanged. The UI uses tank metadata and channel network records and labels demo charts/values as illustrative; it does not claim live telemetry, a validated one-year forecast or an official public warning.
@@ -25,4 +25,4 @@ Tank storage does not prove a household has reliable treated supply. A productio
 - **Governance:** officials approve advisories and operational options. No direct automatic control of tank structures.
 
 ## Deployment
-The root is a static site and can be deployed with GitHub Pages or a static hosting provider. The current feedback form only stores reports in the browser session; connect an authenticated server/database before use beyond demonstration.
+The root is a static site and can be deployed with GitHub Pages or a static hosting provider. Feedback reports and authority replies are session-only in this prototype; connect an authenticated server/database with role-based authorization and audit history before use beyond demonstration.
