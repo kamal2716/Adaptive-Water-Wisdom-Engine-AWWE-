@@ -155,6 +155,8 @@
    const markers=tanks.map((t,i)=>{const x=10+(Number.isFinite(t.longitude)?(Number(t.longitude)-minLon)/Math.max(.0001,maxLon-minLon):i/Math.max(1,tanks.length-1))*80;const y=10+(Number.isFinite(t.latitude)?(maxLat-Number(t.latitude))/Math.max(.0001,maxLat-minLat):i/Math.max(1,tanks.length-1))*80;return '<button class="map-tank" style="left:'+x.toFixed(2)+'%;top:'+y.toFixed(2)+'%" title="'+esc(t.name)+' · '+esc(t.pin)+'" aria-label="Select '+esc(t.name)+'" data-tank="'+t.id+'"><span>'+esc(t.name)+'</span></button>';}).join("");
    const tankIndex='<div class="tank-map-index">'+tanks.map(t=>'<button type="button" class="tank-index-item '+(t.id===state.tank.id?'selected':'')+'" data-tank="'+t.id+'"><strong>'+esc(t.name)+'</strong><small>'+esc(t.pin)+' · '+esc(t.id)+'</small></button>').join("")+'</div>';
    const t=state.tank,usable=Math.max(0,(Number(t.storage)||0)-(Number(t.deadStorage)||0));
+   const selectedPeriodRows=historicalRows.filter(row=>row.tank_id===t.id&&Number.isFinite(row.timestamp)&&new Date(row.timestamp).getMonth()>=state.chartStartMonth&&new Date(row.timestamp).getMonth()<=state.chartEndMonth);
+   const cumulativeRainfall=selectedPeriodRows.reduce((sum,row)=>sum+(Number(row.rainfall_mm)||0),0);
    const tankDetails='<div class="authority-detail-grid">'+
     '<div class="detail-stat"><span>Recorded storage</span><strong>'+num(t.storage)+' MCM</strong><small>'+pct(t)+'% of listed capacity ('+num(t.capacity)+' MCM)</small></div>'+
     '<div class="detail-stat"><span>Water level / full reservoir level</span><strong>'+num(t.waterLevel)+' / '+num(t.fullLevel)+' m</strong><small>Difference to FRL: '+(Number.isFinite(t.waterLevel)&&Number.isFinite(t.fullLevel)?num(t.fullLevel-t.waterLevel)+' m':'Not recorded')+'</small></div>'+
@@ -164,6 +166,7 @@
     '<div class="detail-stat"><span>Irrigation outflow</span><strong>'+num(t.irrigationOutflow)+' m³/s</strong><small>Latest recorded daily row</small></div>'+
     '<div class="detail-stat"><span>Spillway discharge</span><strong>'+num(t.spillway)+' m³/s</strong><small>Latest recorded daily row</small></div>'+
     '<div class="detail-stat"><span>Daily rainfall (recorded)</span><strong>'+num(t.rainfall)+' mm</strong><small>Last dated row: '+(t.latestDate?shortDate(t.latestDate):"date unavailable")+'</small></div>'+
+    '<div class="detail-stat"><span>Cumulative rainfall · selected period</span><strong>'+num(cumulativeRainfall,1)+' mm</strong><small>'+selectedPeriodRows.length+' daily records · '+monthRangeLabel()+'</small></div>'+
     '<div class="detail-stat"><span>Groundwater-table depth</span><strong>'+num(t.groundwaterDepth)+' m</strong><small>Depth value as recorded in CSV</small></div>'+
     '<div class="detail-stat"><span>Evaporation rate</span><strong>'+num(t.evaporation)+' mm</strong><small>Verify period/unit in source documentation</small></div>'+
     '<div class="detail-stat"><span>Siltation</span><strong>'+num(t.silt,1)+'%</strong><small>Tank metadata</small></div>'+
