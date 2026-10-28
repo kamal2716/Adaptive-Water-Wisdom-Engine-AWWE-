@@ -120,13 +120,35 @@ function renderChart(id,labels,sets){
    if($("#scenario-detail"))$("#scenario-detail").textContent="Illustrative score "+score.toFixed(1)+". This does not predict actual tank behaviour or model hydraulic safety.";
   }
   function bindPanel(){
-   const filter=$("#report-filter");if(filter)filter.addEventListener("change",()=>{state.reportFilter=filter.value;refresh();});
-   document.querySelectorAll("[data-save-reply]").forEach(btn=>btn.addEventListener("click",()=>{const id=Number(btn.dataset.saveReply),report=state.reports.find(r=>r.id===id);if(!report)return;const reply=document.querySelector('[data-report-reply="'+id+'"]');const status=document.querySelector('[data-report-status="'+id+'"]');report.reply=reply?reply.value.trim():"";report.replyDate=new Date().toLocaleString();report.status=status?status.value:(report.status||"Received");refresh();}));
-   document.querySelectorAll("[data-report-status]").forEach(sel=>sel.addEventListener("change",()=>{const report=state.reports.find(r=>r.id===Number(sel.dataset.reportStatus));if(report)report.status=sel.value;}));
-   document.querySelectorAll("[data-pin]").forEach(b=>b.addEventListener("click",()=>{state.pin=b.dataset.pin;const match=tanks.find(t=>t.pin===state.pin);if(match)state.tank=match;refresh();}));
-   document.querySelectorAll(".map-tank").forEach(b=>b.addEventListener("click",()=>{state.tank=tanks.find(t=>t.id===b.dataset.tank)||state.tank;state.pin=state.tank.pin;refresh();const msg=$("#postcode-message");if(msg)msg.textContent="Matched tank record: "+state.tank.name;}));
+   const filter=$("#report-filter");
+   if(filter)filter.addEventListener("change",()=>{state.reportFilter=filter.value;refresh();});
+   document.querySelectorAll("[data-save-reply]").forEach(btn=>btn.addEventListener("click",()=>{
+    const id=Number(btn.dataset.saveReply), report=state.reports.find(r=>r.id===id);
+    if(!report)return;
+    const reply=document.querySelector('[data-report-reply="'+id+'"]');
+    const status=document.querySelector('[data-report-status="'+id+'"]');
+    report.reply=reply?reply.value.trim():"";
+    report.replyDate=new Date().toLocaleString();
+    report.status=status?status.value:(report.status||"Received");
+    refresh();
+   }));
+   document.querySelectorAll("[data-report-status]").forEach(sel=>sel.addEventListener("change",()=>{
+    const report=state.reports.find(r=>r.id===Number(sel.dataset.reportStatus));
+    if(report)report.status=sel.value;
+   }));
+   document.querySelectorAll("[data-pin]").forEach(btn=>btn.addEventListener("click",()=>{
+    state.pin=btn.dataset.pin;const match=tanks.find(t=>t.pin===state.pin);if(match)state.tank=match;refresh();
+   }));
+   document.querySelectorAll(".map-tank").forEach(btn=>btn.addEventListener("click",()=>{
+    state.tank=tanks.find(t=>t.id===btn.dataset.tank)||state.tank;state.pin=state.tank.pin;refresh();
+   }));
    document.querySelectorAll('#dash-panel input[type="range"]').forEach(el=>el.addEventListener("input",scenario));
-   const form=$("#report-form");if(form)form.addEventListener("submit",e=>{e.preventDefault();state.reports.unshift({id:state.nextReportId++,type:$("#report-type").value,pin:$("#report-pin").value.trim(),detail:$("#report-detail").value.trim(),date:new Date().toLocaleString(),audience:state.role,status:"Received",reply:"",replyDate:""});refresh();});
+   const form=$("#report-form");
+   if(form)form.addEventListener("submit",e=>{
+    e.preventDefault();
+    state.reports.unshift({id:state.nextReportId++,type:$("#report-type").value,pin:$("#report-pin").value.trim(),detail:$("#report-detail").value.trim(),date:new Date().toLocaleString(),audience:state.role,status:"Received",reply:"",replyDate:""});
+    refresh();
+   });
   }
   function refresh(){const root=$("#dash-panel");if(root){root.innerHTML=panel();bindPanel();charts();}}
   function open(role){
