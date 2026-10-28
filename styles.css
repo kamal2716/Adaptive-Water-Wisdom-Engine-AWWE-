@@ -65,3 +65,9 @@
 @media print{.print-only{display:block!important;margin:0 0 14px!important;padding:10px 12px!important;border:1px solid #ddd!important;border-radius:8px!important;font-size:10px!important;color:#263f32!important}.chart-controls{display:none!important}}
 
 @media print{.field-grid:has(#report-form){display:none!important}}
+
+/* Center the full project name in the main top header */
+.topline{position:relative}
+.topline>.brand-name{position:absolute;left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap;max-width:calc(100% - 390px);overflow:hidden;text-overflow:ellipsis}
+@media(max-width:850px){.topline>.brand-name{font-size:12px;max-width:calc(100% - 260px)}}
+@media(max-width:620px){.topline>.brand-name{font-size:9px;letter-spacing:.015em;max-width:calc(100% - 100px);white-space:normal;line-height:1.2}.topline>.brand-name small{font-size:8px;margin-top:3px}}
