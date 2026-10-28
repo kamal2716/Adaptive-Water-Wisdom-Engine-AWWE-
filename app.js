@@ -29,6 +29,49 @@
   const loadReports=()=>{try{return JSON.parse(sessionStorage.getItem("awwe-reports")||"[]");}catch(_){return [];}};
   const state={role:"household",panel:"overview",pin:"625003",tank:tanks[0],chart:null,reports:loadReports(),reportFilter:"all",nextReportId:1,formNotice:""};
   const saveReports=()=>{try{sessionStorage.setItem("awwe-reports",JSON.stringify(state.reports));}catch(_){}};
+  let historicalRows=[];
+  let repositoryDataReady=false;
+  let repositoryDataError="";
+  const parseCSV=text=>{
+   const lines=text.trim().split(/\r?\n/);
+   const splitLine=line=>{const cells=[];let value="",quoted=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'&&line[i+1]==='"'&&quoted){value+='"';i++;}else if(c==='"')quoted=!quoted;else if(c===","&&!quoted){cells.push(value);value="";}else value+=c;}cells.push(value);return cells;};
+   const headers=splitLine(lines.shift()||"");
+   return lines.filter(line=>line.trim()).map(line=>{const cells=splitLine(line);return Object.fromEntries(headers.map((h,i)=>[h,cells[i]??""]));});
+  };
+  const dateValue=value=>{const parts=String(value).split("/").map(Number);return parts.length===3?new Date(parts[2],parts[0]-1,parts[1]).getTime():NaN;};
+  const shortDate=timestamp=>new Date(timestamp).toLocaleDateString("en-IN",{day:"numeric",month:"short"});
+  async function loadRepositoryData(){
+   try{
+    const [metadataText,seriesText]=await Promise.all([
+     fetch("madurai_tank_master_metadata.csv").then(r=>{if(!r.ok)throw new Error("Tank metadata CSV returned "+r.status);return r.text();}),
+     fetch("madurai_daily_hydrological_timeseries.csv").then(r=>{if(!r.ok)throw new Error("Hydrological time-series CSV returned "+r.status);return r.text();})
+    ]);
+    const metadata=parseCSV(metadataText);
+    historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)})).filter(r=>r.tank_id&&Number.isFinite(r.timestamp)).sort((a,b)=>a.timestamp-b.timestamp);
+    const loaded=metadata.map(m=>{
+     const rows=historicalRows.filter(r=>r.tank_id===m.tank_id);
+     const latest=rows[rows.length-1];
+     return {id:m.tank_id,name:m.tank_name,pin:String(m.postcode),capacity:Number(m.storage_capacity_mcm),storage:latest?Number(latest.current_storage_mcm):0,silt:Number(m.siltation_percentage),latitude:Number(m.latitude),longitude:Number(m.longitude),catchment:Number(m.catchment_area_sqkm),fullLevel:Number(m.full_reservoir_level_m),deadStorage:Number(m.dead_storage_mcm),downstreamId:m.downstream_tank_id};
+    });
+    if(!loaded.length)throw new Error("Tank metadata CSV contains no tank records");
+    tanks.splice(0,tanks.length,...loaded);
+    repositoryDataReady=true;
+    repositoryDataError="";
+    state.tank=tanks.find(t=>t.id===state.tank?.id)||tanks[0];
+    state.pin=state.tank.pin;
+   }catch(error){
+    repositoryDataError="Could not load repository CSV data. Open the site through GitHub Pages or a local web server, not by opening index.html directly.";
+    console.error("AWWE data loading failed:",error);
+    repositoryDataReady=true;
+   }
+   const modal=$("#dashboard-modal");
+   if(modal?.classList.contains("open")){
+    const info=roles[state.role],bar=$("#location-bar");
+    if(bar)bar.outerHTML=info.location?pinBar():authorityPinBar();
+    refresh();
+   }
+  }
+
   const esc=v=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const pct=t=>Math.round(100*t.storage/t.capacity);
   const level=t=>pct(t)<30?"Low":pct(t)<58?"Moderate":"Available";
@@ -36,30 +79,31 @@
   const metric=(title,value,note,chip="",cls="")=>'<article class="metric-card"><div class="metric-label">'+title+'</div><div class="metric-value">'+value+'</div>'+(chip?'<span class="metric-chip '+cls+'">'+chip+'</span>':'')+'<div class="metric-note">'+note+'</div></article>';
   const card=(title,sub,body)=>'<section class="panel-card"><div class="panel-title"><div><h3>'+title+'</h3>'+(sub?'<p>'+sub+'</p>':'')+'</div></div>'+body+'</section>';
   const tankRow=t=>'<div class="tank-row"><div><strong>'+esc(t.name)+'</strong><small>'+esc(t.id)+' · '+level(t)+'</small><div class="bar-track"><div class="bar-fill '+tone(t)+'" style="width:'+Math.min(100,pct(t))+'%"></div></div></div><div class="tank-value">'+pct(t)+'%<small>capacity</small></div></div>';
-  const canvas=id=>'<div class="chart-wrap"><canvas id="'+id+'" aria-label="Illustrative tank storage trend"></canvas></div>';
-  const pinBar=()=>{const unique=[...new Map(tanks.map(t=>[t.pin,t])).values()];return '<div class="location-bar" id="location-bar"><label for="postcode">PIN / nearby eri</label><select id="postcode" aria-label="Choose PIN code">'+unique.map(t=>'<option value="'+esc(t.pin)+'" '+(state.pin===t.pin?"selected":"")+'>'+esc(t.pin)+' — '+esc(t.name)+(t.pin==="625402"?" · multiple tanks":"")+'</option>').join("")+'</select><button id="apply-postcode">Update area</button><span id="postcode-message">Choose a listed PIN; 625402 is shared by four tanks.</span></div>'};
+  const canvas=id=>'<div class="chart-wrap"><canvas id="'+id+'" aria-label="Historical tank readings from repository CSV"></canvas></div>';
+  const pinBar=()=>'<div class="location-bar" id="location-bar"><label for="postcode">PIN / tank search</label><input id="postcode" list="tank-options" autocomplete="off" placeholder="Search PIN or tank name" value="'+esc(state.tank?state.tank.pin+" — "+state.tank.name:state.pin)+'" aria-label="Search PIN code or tank name"><datalist id="tank-options">'+tanks.map(t=>'<option value="'+esc(t.pin+" — "+t.name)+'"></option>').join("")+'</datalist><button id="apply-postcode">Find tank</button><span id="postcode-message">Search by PIN or tank name. A shared PIN can match multiple tanks.</span></div>';
+  const authorityPinBar=()=>'<div class="location-bar authority-location" id="location-bar"><label>Available PINs / eri</label><div class="pin-chips">'+[...new Map(tanks.map(t=>[t.pin,t])).values()].map(t=>'<button type="button" class="pin-chip" data-pin="'+esc(t.pin)+'" title="Select '+esc(t.name)+'">'+esc(t.pin)+'<small>'+esc(t.name)+'</small></button>').join('')+'</div><span>'+tanks.length+' tank records · select a PIN to inspect its records</span></div>';
   function household(){
    const t=state.tank;
    const advice='<div class="recommendation"><span class="rec-icon">✓</span><div><strong>Check official supply updates</strong><p>Confirm treatment, distribution timing and interruption notices with your local provider.</p></div></div><div class="recommendation"><span class="rec-icon">≈</span><div><strong>Save water where practical</strong><p>Repair leaks, reuse suitable greywater where permitted and prepare harvesting systems before heavy rain.</p></div></div><div class="recommendation warn"><span class="rec-icon">!</span><div><strong>Water quality is separate</strong><p>Untested water must not be treated as safe to drink. Check approved treatment and testing guidance.</p></div></div>';
-   return '<div class="metric-grid">'+metric("NEAREST TANK CONTEXT",esc(t.name),"Repository record · PIN "+t.pin)+metric("STORAGE SNAPSHOT",pct(t)+"%","Illustrative storage relative to listed capacity",level(t),tone(t))+metric("HOUSEHOLD SUPPLY","Unverified","Tank storage does not confirm treated supply or tap availability","Needs supply data","warn")+'</div><div class="panel-grid">'+card("Water context","Illustrative tank storage snapshot",canvas("main-chart"))+card("What to do now","Useful household guidance",advice)+'</div><div class="panel-grid">'+card("Tank records","Reference data, not a live service",'<div class="tank-list">'+tanks.filter(t=>t.pin===state.pin).map(tankRow).concat(tanks.filter(t=>t.pin!==state.pin)).map(tankRow).join("")+'</div>')+card("Flood & drought readiness","Follow verified local information",'<div class="recommendation warn"><span class="rec-icon">☔</span><div><strong>Heavy rain expected?</strong><p>Follow official flood warnings and watch for verified tank release advisories. Stay away from flooded channels.</p></div></div><div class="recommendation"><span class="rec-icon">☼</span><div><strong>During a dry spell</strong><p>Use water-saving practices and seek confirmed local supply schedules.</p></div></div>')+'</div>';
+   return '<div class="metric-grid">'+metric("NEAREST TANK CONTEXT",esc(t.name),"Repository record · PIN "+t.pin)+metric("LATEST RECORDED STORAGE",pct(t)+"%","Latest CSV storage ÷ listed capacity",level(t),tone(t))+metric("HOUSEHOLD SUPPLY","Unverified","Tank storage does not confirm treated supply or tap availability","Needs supply data","warn")+'</div><div class="panel-grid">'+card("Water context","Daily historical readings from the repository CSV",canvas("main-chart"))+card("What to do now","Useful household guidance",advice)+'</div><div class="panel-grid">'+card("Tank records","Reference data, not a live service",'<div class="tank-list">'+tanks.filter(t=>t.pin===state.pin).map(tankRow).concat(tanks.filter(t=>t.pin!==state.pin)).map(tankRow).join("")+'</div>')+card("Flood & drought readiness","Follow verified local information",'<div class="recommendation warn"><span class="rec-icon">☔</span><div><strong>Heavy rain expected?</strong><p>Follow official flood warnings and watch for verified tank release advisories. Stay away from flooded channels.</p></div></div><div class="recommendation"><span class="rec-icon">☼</span><div><strong>During a dry spell</strong><p>Use water-saving practices and seek confirmed local supply schedules.</p></div></div>')+'</div>';
   }
   function farmer(){
    const t=state.tank;
    const advice='<div class="recommendation"><span class="rec-icon">✓</span><div><strong>Check soil moisture first</strong><p>Plan irrigation using field conditions and crop needs, not tank percentage alone.</p></div></div><div class="recommendation warn"><span class="rec-icon">☔</span><div><strong>If heavy rain is forecast</strong><p>Inspect drains, protect equipment and follow official flood guidance. Do not enter flooded channels.</p></div></div><div class="recommendation"><span class="rec-icon">≈</span><div><strong>Plan water-efficient irrigation</strong><p>Prioritize water-sensitive crop stages and avoid unnecessary watering.</p></div></div>';
    const guide='<div class="action-list"><div class="action-check"><span class="metric-chip critical">Flood risk</span><div><strong>Protect the field</strong><small>Check drainage and monitor official warnings.</small></div></div><div class="action-check"><span class="metric-chip warn">Low water</span><div><strong>Conserve irrigation</strong><small>Check soil moisture, crop stage and approved schedule.</small></div></div><div class="action-check"><span class="metric-chip">Normal</span><div><strong>Keep to the plan</strong><small>Follow normal irrigation while avoiding waste.</small></div></div><div class="action-check"><span class="metric-chip warn">Quality</span><div><strong>Confirm permitted use</strong><small>Irrigation suitability does not imply drinking-water safety.</small></div></div></div>';
-   return '<div class="metric-grid">'+metric("CONNECTED TANK",esc(t.name),"PIN "+t.pin+" · repository tank metadata")+metric("TANK STORAGE CONTEXT",pct(t)+"%","Illustrative storage/capacity calculation",level(t),tone(t))+metric("CROP WATER RISK","Needs inputs","Crop, soil moisture and forecast are not connected","Not assessed","warn")+'</div><div class="risk-banner"><span class="risk-badge">RISK CHECK</span><div><strong>Check conditions before irrigation.</strong><p>Field risk cannot be verified without a validated forecast, crop stage and local observations.</p></div></div><div class="panel-grid">'+card("Tank storage context","Illustrative repository snapshot",canvas("main-chart"))+card("What should I do today?","Practical precautions",advice)+'</div>'+card("Simple risk guide","Conceptual guidance — not validated thresholds",guide);
+   return '<div class="metric-grid">'+metric("CONNECTED TANK",esc(t.name),"PIN "+t.pin+" · repository tank metadata")+metric("LATEST RECORDED STORAGE",pct(t)+"%","Latest CSV storage ÷ listed capacity",level(t),tone(t))+metric("CROP WATER RISK","Needs inputs","Crop, soil moisture and forecast are not connected","Not assessed","warn")+'</div><div class="risk-banner"><span class="risk-badge">RISK CHECK</span><div><strong>Check conditions before irrigation.</strong><p>Field risk cannot be verified without a validated forecast, crop stage and local observations.</p></div></div><div class="panel-grid">'+card("Tank storage history","Daily historical readings from the repository CSV",canvas("main-chart"))+card("What should I do today?","Practical precautions",advice)+'</div>'+card("Simple risk guide","Conceptual guidance — not validated thresholds",guide);
   }
   function authority(){
    const capacity=tanks.reduce((s,t)=>s+t.capacity,0),stored=tanks.reduce((s,t)=>s+t.storage,0);
    const markers=tanks.map(t=>'<button class="map-tank" title="'+esc(t.name)+'" data-tank="'+t.id+'"><span>'+esc(t.name)+'</span></button>').join("");
    const network=channels.slice().sort((a,b)=>b.priority-a.priority).map(c=>'<div class="tank-row"><div><strong>'+esc(c.from)+' → '+esc(c.to)+'</strong><small>'+esc(c.silt)+' siltation · '+c.encroach+'% encroachment</small><div class="bar-track"><div class="bar-fill '+(c.silt==="Severe"?"critical":"")+'" style="width:'+Math.min(100,c.priority*1.8)+'%"></div></div></div><div class="tank-value">'+c.priority+'<small>priority score</small></div></div>').join("");
    const priorities='<div class="recommendation danger"><span class="rec-icon">!</span><div><strong>Inspect constrained channels</strong><p>Some network records show severe siltation and reduced conveyance. Verify in the field and review downstream risk.</p></div></div><div class="recommendation warn"><span class="rec-icon">≈</span><div><strong>Assess safe retention space</strong><p>Compare inflow with verified storage, structural safety and cascade capacity.</p></div></div><div class="recommendation"><span class="rec-icon">✓</span><div><strong>Keep the human approval step</strong><p>Authorized officials must approve releases and transfers after reviewing safe operating limits.</p></div></div>';
-   return '<div class="metric-grid">'+metric("TANK RECORDS",String(tanks.length),"Tank metadata in repository CSV")+metric("RECORDED CAPACITY",capacity.toFixed(1)+" MCM","Sum of listed capacity fields")+metric("STORAGE SNAPSHOT",Math.round(stored/capacity*100)+"%","Illustrative repository values, not live","Not live","warn")+'</div><div class="panel-grid">'+card("Tank cascade overview","Select a tank record below; this schematic is illustrative, not a geographic map",'<div class="map-panel"><div class="map-art">'+markers+'</div><div class="map-legend"><span><i></i> Repository tank location</span><span>12 tank records</span></div></div>')+card("Restoration signals","Channel metadata in repository",'<div class="tank-list">'+network+'</div>')+'</div><div class="panel-grid">'+card("Storage history context","Illustrative sample, not live readings",canvas("main-chart"))+card("Review priorities","Validate before action",priorities)+'</div>';
+   return '<div class="metric-grid">'+metric("TANK RECORDS",String(tanks.length),"Tank metadata in repository CSV")+metric("RECORDED CAPACITY",capacity.toFixed(1)+" MCM","Sum of listed capacity fields")+metric("LATEST RECORDED STORAGE",Math.round(stored/capacity*100)+"%","Latest dated CSV snapshot · not live","Historical","warn")+'</div><div class="panel-grid">'+card("Tank cascade overview","Select a tank record below; this schematic is illustrative, not a geographic map",'<div class="map-panel"><div class="map-art">'+markers+'</div><div class="map-legend"><span><i></i> Repository tank location</span><span>12 tank records</span></div></div>')+card("Restoration signals","Channel metadata in repository",'<div class="tank-list">'+network+'</div>')+'</div><div class="panel-grid">'+card("Storage history","Daily total from historical CSV records · not live",canvas("main-chart"))+card("Review priorities","Validate before action",priorities)+'</div>';
   }
   function trends(){
-   const notes='<div class="recommendation"><span class="rec-icon">⌁</span><div><strong>Recorded data</strong><p>Timestamped hydrological records can help explain historical rainfall, inflow, level and storage.</p></div></div><div class="recommendation warn"><span class="rec-icon">◷</span><div><strong>Predictions require validation</strong><p>A one-year outlook needs a validated model, forecast horizon, confidence and update timestamp.</p></div></div><div class="recommendation"><span class="rec-icon">✓</span><div><strong>Model evaluation</strong><p>Test predictions on chronological holdout periods before presenting forecast claims.</p></div></div>';
+   const notes='<div class="recommendation"><span class="rec-icon">⌁</span><div><strong>Historical records loaded</strong><p>Charts use dated rainfall and storage records from the repository CSV. They are historical observations, not live readings.</p></div></div><div class="recommendation warn"><span class="rec-icon">◷</span><div><strong>Predictions require validation</strong><p>A one-year outlook needs a validated model, forecast horizon, confidence and update timestamp.</p></div></div><div class="recommendation"><span class="rec-icon">✓</span><div><strong>Model evaluation</strong><p>Test predictions on chronological holdout periods before presenting forecast claims.</p></div></div>';
    const controls='<div class="scenario-controls"><div><label for="rain-slider">Rainfall change (%)</label><input id="rain-slider" type="range" min="-50" max="100" value="20"><output id="rain-value">+20%</output></div><div><label for="demand-slider">Demand change (%)</label><input id="demand-slider" type="range" min="-30" max="50" value="0"><output id="demand-value">0%</output></div><div><label for="capacity-slider">Usable capacity (%)</label><input id="capacity-slider" type="range" min="20" max="100" value="75"><output id="capacity-value">75%</output></div></div><div class="scenario-result"><small>Illustrative scenario index · not a forecast</small><strong id="scenario-result">Balanced input</strong><small id="scenario-detail">Adjust assumptions to compare an illustrative score only.</small></div>';
-   return '<div class="panel-grid">'+card("Hydrology and storage signals","Illustrative series · not a forecast",canvas("trend-chart"))+card("How to read this view","Separate evidence from forecasts",notes)+'</div>'+card("Scenario explorer","Hypothetical inputs — not an operational recommendation",controls);
+   return '<div class="panel-grid">'+card("Hydrology and storage signals","Historical CSV readings for the selected tank · not a forecast",canvas("trend-chart"))+card("How to read this view","Separate evidence from forecasts",notes)+'</div>'+card("Scenario explorer","Hypothetical inputs — not an operational recommendation",controls);
   }
   function actions(){
    let list;
@@ -98,17 +142,52 @@
     if(state.panel==="reports") return reports();
     return '<div class="empty-state"><strong>Section not found</strong><p>Choose another workspace section.</p></div>';
   }
-  function renderChart(id,labels,sets){
+  function renderChart(id,labels,sets,axisLabels={}){
    if(state.chart){state.chart.destroy();state.chart=null;}
-   const el=document.getElementById(id);if(!el||!window.Chart)return;
-   state.chart=new Chart(el.getContext("2d"),{type:"line",data:{labels,datasets:sets.map(s=>({label:s.label,data:s.data,borderColor:s.color,backgroundColor:s.color+"20",borderWidth:2,fill:!!s.fill,tension:.35,pointRadius:0,pointHoverRadius:4}))},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{display:true,position:"bottom",labels:{boxWidth:8,boxHeight:8,usePointStyle:true,font:{family:"DM Sans",size:9},color:"#68796a",padding:14}},tooltip:{backgroundColor:"#284b3a",bodyFont:{family:"DM Sans",size:10},padding:10,cornerRadius:8}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:7,color:"#879285",font:{family:"DM Sans",size:8}},border:{display:false}},y:{grid:{color:"#eff0e7"},ticks:{color:"#879285",font:{family:"DM Sans",size:8}},border:{display:false}}}}});
+   const el=document.getElementById(id);if(!el)return;
+   if(!repositoryDataReady||!historicalRows.length){
+    el.parentElement.innerHTML='<div class="chart-message">'+esc(repositoryDataError||"Loading historical CSV data…")+'</div>';
+    return;
+   }
+   if(!window.Chart){el.parentElement.innerHTML='<div class="chart-message">Chart library did not load. Check your internet connection and reload.</div>';return;}
+   const scales={
+    x:{grid:{display:false},ticks:{maxTicksLimit:7,color:"#879285",font:{family:"DM Sans",size:8}},border:{display:false}},
+    y:{grid:{color:"#eff0e7"},ticks:{color:"#879285",font:{family:"DM Sans",size:8}},border:{display:false},title:{display:!!axisLabels.y,text:axisLabels.y||""}}
+   };
+   if(sets.some(set=>set.axis==="y1"))scales.y1={position:"right",grid:{drawOnChartArea:false},ticks:{color:"#879285",font:{family:"DM Sans",size:8}},border:{display:false},title:{display:!!axisLabels.y1,text:axisLabels.y1||""}};
+   state.chart=new Chart(el.getContext("2d"),{type:"line",data:{labels,datasets:sets.map(set=>({label:set.label,data:set.data,yAxisID:set.axis||"y",borderColor:set.color,backgroundColor:set.color+"20",borderWidth:2,fill:!!set.fill,tension:.25,pointRadius:0,pointHoverRadius:4,spanGaps:false}))},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{display:true,position:"bottom",labels:{boxWidth:8,boxHeight:8,usePointStyle:true,font:{family:"DM Sans",size:9},color:"#68796a",padding:14}},tooltip:{backgroundColor:"#284b3a",bodyFont:{family:"DM Sans",size:10},padding:10,cornerRadius:8}},scales}});
   }
   function charts(){
-   if(state.panel==="overview"){
-    if(state.role==="authority")renderChart("main-chart",["Jan","Feb","Mar","Apr","May","Jun","Jul"],[{label:"Illustrative storage (MCM)",data:[1.3,1.6,1.8,2,2.4,2.7,3],color:"#4b8c7e",fill:true},{label:"Sample tank capacity",data:Array(7).fill(state.tank.capacity),color:"#c69b58"}]);
-    else renderChart("main-chart",["Jan","Feb","Mar","Apr","May","Jun","Jul"],[{label:"Illustrative storage (MCM)",data:[.63,.7,.68,.77,.82,.9,1].map(v=>+(v*state.tank.storage).toFixed(2)),color:"#4d8b7e",fill:true},{label:"Capacity (MCM)",data:Array(7).fill(state.tank.capacity),color:"#c6a26a"}]);
+   const selected=state.tank;
+   if(!selected||!repositoryDataReady||!historicalRows.length){
+    if(state.panel==="overview")renderChart("main-chart",[],[]);
+    if(state.panel==="trends")renderChart("trend-chart",[],[]);
+    return;
    }
-   if(state.panel==="trends")renderChart("trend-chart",["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],[{label:"Illustrative rainfall (mm)",data:[12,18,25,38,52,48,66,83,112,145,88,29],color:"#6d9f95",fill:true},{label:"Demand index",data:[72,69,74,78,82,80,77,76,70,66,68,72],color:"#c6a26a"}]);
+   const selectedRows=historicalRows.filter(row=>row.tank_id===selected.id).sort((a,b)=>a.timestamp-b.timestamp);
+   if(state.panel==="overview"){
+    if(state.role==="authority"){
+     const daily=new Map();
+     historicalRows.forEach(row=>{const current=daily.get(row.timestamp)||{storage:0};current.storage+=Number(row.current_storage_mcm)||0;daily.set(row.timestamp,current);});
+     const points=[...daily.entries()].sort((a,b)=>a[0]-b[0]);
+     const capacity=tanks.reduce((sum,t)=>sum+t.capacity,0);
+     renderChart("main-chart",points.map(([date])=>shortDate(date)),[
+      {label:"Recorded total storage (MCM)",data:points.map(([,v])=>+v.storage.toFixed(2)),color:"#4b8c7e",fill:true},
+      {label:"Listed total capacity (MCM)",data:points.map(()=>+capacity.toFixed(2)),color:"#c69b58"}
+     ],{y:"Storage (MCM)"});
+    }else{
+     renderChart("main-chart",selectedRows.map(row=>shortDate(row.timestamp)),[
+      {label:"Recorded storage (MCM)",data:selectedRows.map(row=>Number(row.current_storage_mcm)),color:"#4d8b7e",fill:true},
+      {label:"Listed capacity (MCM)",data:selectedRows.map(()=>selected.capacity),color:"#c6a26a"}
+     ],{y:"Storage (MCM)"});
+    }
+   }
+   if(state.panel==="trends"){
+    renderChart("trend-chart",selectedRows.map(row=>shortDate(row.timestamp)),[
+     {label:"Recorded rainfall (mm)",data:selectedRows.map(row=>Number(row.rainfall_mm)),color:"#6d9f95",fill:true},
+     {label:"Recorded storage (MCM)",data:selectedRows.map(row=>Number(row.current_storage_mcm)),color:"#c6a26a",axis:"y1"}
+    ],{y:"Rainfall (mm)",y1:"Storage (MCM)"});
+   }
   }
   function scenario(){
    const rain=Number($("#rain-slider")?.value||0),demand=Number($("#demand-slider")?.value||0),capacity=Number($("#capacity-slider")?.value||75);
@@ -159,18 +238,21 @@
    state.role=role||state.role;state.panel="overview";const info=roles[state.role],modal=$("#dashboard-modal");
    modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
    $("#dash-kicker").textContent=info.label;$("#dashboard-title").textContent=info.title;$("#dash-description").textContent=info.description;
-   $("#location-bar").outerHTML=info.location?pinBar():'<div class="location-bar authority-location" id="location-bar"><label>Available PINs / eri</label><div class="pin-chips">'+[...new Map(tanks.map(t=>[t.pin,t])).values()].map(t=>'<button type="button" class="pin-chip" data-pin="'+t.pin+'" title="Select '+esc(t.name)+'">'+t.pin+'<small>'+esc(t.name)+'</small></button>').join('')+'</div><span>12 tank records · select a PIN chip to inspect its tank</span></div>';
+   $("#location-bar").outerHTML=info.location?pinBar():authorityPinBar();
    $$(".side-link").forEach(b=>b.classList.toggle("active",b.dataset.panel==="overview"));refresh();
   }
   function close(){const modal=$("#dashboard-modal");modal.classList.remove("open");modal.setAttribute("aria-hidden","true");document.body.style.overflow="";if(state.chart){state.chart.destroy();state.chart=null;}}
   function applyPin(){
-   const select=$("#postcode");if(!select)return;
-   const pin=select.value.trim();
-   if(!/^\d{6}$/.test(pin)){const msg=$("#postcode-message");if(msg)msg.textContent="Choose a valid 6-digit PIN code";return;}
-   state.pin=pin;const match=tanks.find(t=>t.pin===pin);
-   if(match)state.tank=match;
+   const input=$("#postcode");if(!input)return;
+   const raw=input.value.trim().toLowerCase();
+   const exactTank=tanks.find(t=>(t.pin+" — "+t.name).toLowerCase()===raw||t.name.toLowerCase()===raw);
+   const pinMatch=raw.match(/\b\d{6}\b/);
+   const pin=exactTank?exactTank.pin:(pinMatch?pinMatch[0]:"");
+   if(!pin){const msg=$("#postcode-message");if(msg)msg.textContent="Choose a listed tank or enter a valid six-digit PIN.";return;}
+   state.pin=pin;
+   state.tank=exactTank||tanks.find(t=>t.pin===pin)||state.tank;
    refresh();
-   const msg=$("#postcode-message");if(msg)msg.textContent=match?"Matched repository tank: "+match.name:"No exact tank match in the source data; supply availability requires provider data.";
+   const msg=$("#postcode-message");if(msg)msg.textContent=exactTank?"Selected "+exactTank.name+" · PIN "+pin:tanks.filter(t=>t.pin===pin).length+" tank record(s) found for PIN "+pin+".";
   }
   document.addEventListener("click",e=>{
    const role=e.target.closest("[data-role]");if(role){open(role.dataset.role);return;}
@@ -186,4 +268,5 @@
   document.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
   $$(".role-card").forEach(b=>b.addEventListener("click",()=>open(b.dataset.role)));
   window.addEventListener("resize",()=>{if(state.chart)state.chart.resize();});
+  loadRepositoryData();
 })();
