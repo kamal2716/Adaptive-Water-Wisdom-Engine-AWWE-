@@ -63,3 +63,5 @@
 
 .print-only{display:none}
 @media print{.print-only{display:block!important;margin:0 0 14px!important;padding:10px 12px!important;border:1px solid #ddd!important;border-radius:8px!important;font-size:10px!important;color:#263f32!important}.chart-controls{display:none!important}}
+
+@media print{.field-grid:has(#report-form){display:none!important}}
