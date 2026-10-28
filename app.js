@@ -26,7 +26,9 @@
    farmer:{label:"FIELD & FARM / AGRICULTURE",title:"Your field water outlook",description:"Understand the risk, then decide what to do today.",location:true},
    authority:{label:"PLANNING / AUTHORITY WORKSPACE",title:"Madurai water intelligence",description:"Review tank and channel conditions, potential risks and decision options.",location:false}
   };
-  const state={role:"household",panel:"overview",pin:"625003",tank:tanks[0],chart:null,reports:[],reportFilter:"all",nextReportId:1};
+  const loadReports=()=>{try{return JSON.parse(sessionStorage.getItem("awwe-reports")||"[]");}catch(_){return [];}};
+  const state={role:"household",panel:"overview",pin:"625003",tank:tanks[0],chart:null,reports:loadReports(),reportFilter:"all",nextReportId:1};
+  const saveReports=()=>{try{sessionStorage.setItem("awwe-reports",JSON.stringify(state.reports));}catch(_){}};
   const esc=v=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const pct=t=>Math.round(100*t.storage/t.capacity);
   const level=t=>pct(t)<30?"Low":pct(t)<58?"Moderate":"Available";
@@ -67,15 +69,6 @@
    const checklist='<div class="action-list">'+list.map(a=>'<label class="action-check"><input type="checkbox"><span><strong>'+esc(a[0])+'</strong><small>'+esc(a[1])+'</small></span></label>').join("")+'</div>';
    return '<div class="risk-banner"><span class="risk-badge">ACTION WORKSPACE</span><div><strong>Practical prompts, not official alerts</strong><p>Final advice must use verified local conditions.</p></div></div>'+card("Action checklist","Mark items as you complete them",checklist);
   }
-  function reportTable(){
-   const visible=state.reports.filter(r=>state.role==="authority"||r.audience===state.role);
-   if(!visible.length)return '<div class="empty-state"><span class="empty-icon">✓</span><strong>No reports in this view yet</strong><p>New reports submitted by this audience will appear here.</p></div>';
-   return '<div class="report-list">'+visible.map(r=>reportCard(r,state.role==="authority")).join("")+'</div>';
-  }
-  function reportCard(r,authority){
-   const status=r.status||"Received";
-   return '<article class="report-card"><div class="report-card-head"><div><span class="report-type-pill">'+esc(r.type)+'</span><span class="report-audience">'+(r.audience==="farmer"?"Farmer report":"Household report")+'</span></div><span class="status-pill '+(status==="Resolved"?"resolved":status==="In review"?"in-review":"pending")+'">'+esc(status)+'</span></div><h4>'+esc(r.type)+'</h4><p class="report-detail">'+esc(r.detail)+'</p><div class="report-meta"><span>PIN <strong>'+esc(r.pin)+'</strong></span><span>'+esc(r.date)+'</span></div>'+(authority?'<div class="authority-tools"><label for="status-'+r.id+'">Report status</label><select id="status-'+r.id+'" data-report-status="'+r.id+'"><option value="Received" '+(status==="Received"?"selected":"")+'>Received</option><option value="In review" '+(status==="In review"?"selected":"")+'>In review</option><option value="Resolved" '+(status==="Resolved"?"selected":"")+'>Resolved</option></select><label for="reply-'+r.id+'">Reply to '+(r.audience==="farmer"?"farmer":"household")+'</label><textarea id="reply-'+r.id+'" data-report-reply="'+r.id+'" placeholder="Write a clear update or next step">'+esc(r.reply||"")+'</textarea><div class="authority-actions"><button type="button" class="form-button" data-save-reply="'+r.id+'">Save reply</button><span class="reply-status" id="reply-status-'+r.id+'"></span></div></div>':(r.reply?'<div class="authority-reply"><strong>Reply from water authority</strong><p>'+esc(r.reply)+'</p><small>Updated '+esc(r.replyDate||"")+'</small></div>':''))+'</article>';
-  }
   function reports(){
    if(state.role==="authority"){
     const all=state.reports, visible=all.filter(r=>state.reportFilter==="all"||r.audience===state.reportFilter);
@@ -98,7 +91,14 @@
    const status=r.status||"Received";
    return '<article class="report-card"><div class="report-card-head"><div><span class="report-type-pill">'+esc(r.type)+'</span><span class="report-audience">'+(r.audience==="farmer"?"Farmer report":"Household report")+'</span></div><span class="status-pill '+(status==="Resolved"?"resolved":status==="In review"?"in-review":"pending")+'">'+esc(status)+'</span></div><h4>'+esc(r.type)+'</h4><p class="report-detail">'+esc(r.detail)+'</p><div class="report-meta"><span>PIN <strong>'+esc(r.pin)+'</strong></span><span>'+esc(r.date)+'</span></div>'+(authority?'<div class="authority-tools"><label for="status-'+r.id+'">Report status</label><select id="status-'+r.id+'" data-report-status="'+r.id+'"><option value="Received" '+(status==="Received"?"selected":"")+'>Received</option><option value="In review" '+(status==="In review"?"selected":"")+'>In review</option><option value="Resolved" '+(status==="Resolved"?"selected":"")+'>Resolved</option></select><label for="reply-'+r.id+'">Reply to '+(r.audience==="farmer"?"farmer":"household")+'</label><textarea id="reply-'+r.id+'" data-report-reply="'+r.id+'" placeholder="Write a clear update or next step">'+esc(r.reply||"")+'</textarea><div class="authority-actions"><button type="button" class="form-button" data-save-reply="'+r.id+'">Save reply</button></div></div>':(r.reply?'<div class="authority-reply"><strong>Reply from water authority</strong><p>'+esc(r.reply)+'</p><small>Updated '+esc(r.replyDate||"")+'</small></div>':''))+'</article>';
   }
-function renderChart(id,labels,sets){
+  function panel(){
+    if(state.panel==="overview") return state.role==="authority" ? authority() : state.role==="farmer" ? farmer() : household();
+    if(state.panel==="trends") return trends();
+    if(state.panel==="actions") return actions();
+    if(state.panel==="reports") return reports();
+    return '<div class="empty-state"><strong>Section not found</strong><p>Choose another workspace section.</p></div>';
+  }
+  function renderChart(id,labels,sets){
    if(state.chart){state.chart.destroy();state.chart=null;}
    const el=document.getElementById(id);if(!el||!window.Chart)return;
    state.chart=new Chart(el.getContext("2d"),{type:"line",data:{labels,datasets:sets.map(s=>({label:s.label,data:s.data,borderColor:s.color,backgroundColor:s.color+"20",borderWidth:2,fill:!!s.fill,tension:.35,pointRadius:0,pointHoverRadius:4}))},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{display:true,position:"bottom",labels:{boxWidth:8,boxHeight:8,usePointStyle:true,font:{family:"DM Sans",size:9},color:"#68796a",padding:14}},tooltip:{backgroundColor:"#284b3a",bodyFont:{family:"DM Sans",size:10},padding:10,cornerRadius:8}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:7,color:"#879285",font:{family:"DM Sans",size:8}},border:{display:false}},y:{grid:{color:"#eff0e7"},ticks:{color:"#879285",font:{family:"DM Sans",size:8}},border:{display:false}}}}});
@@ -130,11 +130,12 @@ function renderChart(id,labels,sets){
     report.reply=reply?reply.value.trim():"";
     report.replyDate=new Date().toLocaleString();
     report.status=status?status.value:(report.status||"Received");
+    saveReports();
     refresh();
    }));
    document.querySelectorAll("[data-report-status]").forEach(sel=>sel.addEventListener("change",()=>{
     const report=state.reports.find(r=>r.id===Number(sel.dataset.reportStatus));
-    if(report)report.status=sel.value;
+    if(report){report.status=sel.value;saveReports();}
    }));
    document.querySelectorAll("[data-pin]").forEach(btn=>btn.addEventListener("click",()=>{
     state.pin=btn.dataset.pin;const match=tanks.find(t=>t.pin===state.pin);if(match)state.tank=match;refresh();
@@ -147,11 +148,12 @@ function renderChart(id,labels,sets){
    if(form)form.addEventListener("submit",e=>{
     e.preventDefault();
     state.reports.unshift({id:state.nextReportId++,type:$("#report-type").value,pin:$("#report-pin").value.trim(),detail:$("#report-detail").value.trim(),date:new Date().toLocaleString(),audience:state.role,status:"Received",reply:"",replyDate:""});
+    saveReports();
     refresh();
-    const msg=$("#form-status");if(msg)msg.textContent="Report submitted to the demo authority inbox. Replies will appear in your own workspace.";
+    const msg=$("#form-status");if(msg)msg.textContent="Report submitted. It appears under My reports in this browser session.";
    });
   }
-  function refresh(){const root=$("#dash-panel");if(root){root.innerHTML=panel();bindPanel();charts();}}
+  function refresh(){const root=$("#dash-panel");if(root){if(state.chart){state.chart.destroy();state.chart=null;}root.innerHTML=panel();bindPanel();charts();}}
   function open(role){
    state.role=role||state.role;state.panel="overview";const info=roles[state.role],modal=$("#dashboard-modal");
    modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
