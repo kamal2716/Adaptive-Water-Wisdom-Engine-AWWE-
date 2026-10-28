@@ -35,7 +35,7 @@
   const card=(title,sub,body)=>'<section class="panel-card"><div class="panel-title"><div><h3>'+title+'</h3>'+(sub?'<p>'+sub+'</p>':'')+'</div></div>'+body+'</section>';
   const tankRow=t=>'<div class="tank-row"><div><strong>'+esc(t.name)+'</strong><small>'+esc(t.id)+' · '+level(t)+'</small><div class="bar-track"><div class="bar-fill '+tone(t)+'" style="width:'+Math.min(100,pct(t))+'%"></div></div></div><div class="tank-value">'+pct(t)+'%<small>capacity</small></div></div>';
   const canvas=id=>'<div class="chart-wrap"><canvas id="'+id+'" aria-label="Illustrative tank storage trend"></canvas></div>';
-  const pinBar=()=>'<div class="location-bar" id="location-bar"><label for="postcode">Your PIN code</label><input id="postcode" inputmode="numeric" maxlength="6" value="'+esc(state.pin)+'" aria-label="Postal PIN code"><button id="apply-postcode">Update area</button><span id="postcode-message">'+(tanks.some(t=>t.pin===state.pin)?"Matched to repository tank metadata":"Demo locality · no exact tank match")+'</span></div>';
+  const pinBar=()=>{const unique=[...new Map(tanks.map(t=>[t.pin,t])).values()];return '<div class="location-bar" id="location-bar"><label for="postcode">PIN / nearby eri</label><select id="postcode" aria-label="Choose PIN code">'+unique.map(t=>'<option value="'+esc(t.pin)+'" '+(state.pin===t.pin?"selected":"")+'>'+esc(t.pin)+' — '+esc(t.name)+'</option>').join("")+'</select><button id="apply-postcode">Update area</button><span id="postcode-message">Matched to repository tank metadata</span></div>'};
   function household(){
    const t=state.tank;
    const advice='<div class="recommendation"><span class="rec-icon">✓</span><div><strong>Check official supply updates</strong><p>Confirm treatment, distribution timing and interruption notices with your local provider.</p></div></div><div class="recommendation"><span class="rec-icon">≈</span><div><strong>Save water where practical</strong><p>Repair leaks, reuse suitable greywater where permitted and prepare harvesting systems before heavy rain.</p></div></div><div class="recommendation warn"><span class="rec-icon">!</span><div><strong>Water quality is separate</strong><p>Untested water must not be treated as safe to drink. Check approved treatment and testing guidance.</p></div></div>';
@@ -114,6 +114,7 @@
    const filter=$("#report-filter");if(filter)filter.addEventListener("change",()=>{state.reportFilter=filter.value;refresh();});
    document.querySelectorAll("[data-save-reply]").forEach(btn=>btn.addEventListener("click",()=>{const id=Number(btn.dataset.saveReply),report=state.reports.find(r=>r.id===id);if(!report)return;const reply=document.querySelector('[data-report-reply="'+id+'"]');const status=document.querySelector('[data-report-status="'+id+'"]');report.reply=reply?reply.value.trim():"";report.replyDate=new Date().toLocaleString();report.status=status?status.value:(report.status||"Received");refresh();}));
    document.querySelectorAll("[data-report-status]").forEach(sel=>sel.addEventListener("change",()=>{const report=state.reports.find(r=>r.id===Number(sel.dataset.reportStatus));if(report)report.status=sel.value;}));
+   document.querySelectorAll("[data-pin]").forEach(b=>b.addEventListener("click",()=>{state.pin=b.dataset.pin;const match=tanks.find(t=>t.pin===state.pin);if(match)state.tank=match;refresh();}));
    document.querySelectorAll(".map-tank").forEach(b=>b.addEventListener("click",()=>{state.tank=tanks.find(t=>t.id===b.dataset.tank)||state.tank;state.pin=state.tank.pin;refresh();const msg=$("#postcode-message");if(msg)msg.textContent="Matched tank record: "+state.tank.name;}));
    document.querySelectorAll('#dash-panel input[type="range"]').forEach(el=>el.addEventListener("input",scenario));
    const form=$("#report-form");if(form)form.addEventListener("submit",e=>{e.preventDefault();state.reports.unshift({id:state.nextReportId++,type:$("#report-type").value,pin:$("#report-pin").value.trim(),detail:$("#report-detail").value.trim(),date:new Date().toLocaleString(),audience:state.role,status:"Received",reply:"",replyDate:""});refresh();});
@@ -123,15 +124,18 @@
    state.role=role||state.role;state.panel="overview";const info=roles[state.role],modal=$("#dashboard-modal");
    modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
    $("#dash-kicker").textContent=info.label;$("#dashboard-title").textContent=info.title;$("#dash-description").textContent=info.description;
-   $("#location-bar").outerHTML=info.location?pinBar():'<div class="location-bar" id="location-bar"><span>District view · repository metadata</span><span>12 tank records</span></div>';
+   $("#location-bar").outerHTML=info.location?pinBar():'<div class="location-bar authority-location" id="location-bar"><label>Available PINs / eri</label><div class="pin-chips">'+[...new Map(tanks.map(t=>[t.pin,t])).values()].map(t=>'<button type="button" class="pin-chip" data-pin="'+t.pin+'" title="Select '+esc(t.name)+'">'+t.pin+'<small>'+esc(t.name)+'</small></button>').join('')+'</div><span>12 tank records · select a PIN chip to inspect its tank</span></div>';
    $$(".side-link").forEach(b=>b.classList.toggle("active",b.dataset.panel==="overview"));refresh();
   }
   function close(){const modal=$("#dashboard-modal");modal.classList.remove("open");modal.setAttribute("aria-hidden","true");document.body.style.overflow="";if(state.chart){state.chart.destroy();state.chart=null;}}
   function applyPin(){
-   const input=$("#postcode");if(!input)return;const pin=input.value.trim();
-   if(!/^\d{6}$/.test(pin)){const m=$("#postcode-message");if(m)m.textContent="Enter a 6-digit PIN code";return;}
-   state.pin=pin;const match=tanks.find(t=>t.pin===pin);if(match)state.tank=match;refresh();
-   const m=$("#postcode-message");if(m)m.textContent=match?"Matched tank record: "+match.name:"No exact tank match; local supply needs provider data.";
+   const select=$("#postcode");if(!select)return;
+   const pin=select.value.trim();
+   if(!/^\d{6}$/.test(pin)){const msg=$("#postcode-message");if(msg)msg.textContent="Choose a valid 6-digit PIN code";return;}
+   state.pin=pin;const match=tanks.find(t=>t.pin===pin);
+   if(match)state.tank=match;
+   refresh();
+   const msg=$("#postcode-message");if(msg)msg.textContent=match?"Matched repository tank: "+match.name:"No exact tank match in the source data; supply availability requires provider data.";
   }
   document.addEventListener("click",e=>{
    const role=e.target.closest("[data-role]");if(role){open(role.dataset.role);return;}
