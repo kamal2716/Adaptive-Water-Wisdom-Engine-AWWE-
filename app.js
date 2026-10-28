@@ -26,8 +26,48 @@
    farmer:{label:"FIELD & FARM / AGRICULTURE",title:"Your field water outlook",description:"Understand the risk, then decide what to do today.",location:true},
    authority:{label:"PLANNING / AUTHORITY WORKSPACE",title:"Madurai water intelligence",description:"Review tank and channel conditions, potential risks and decision options.",location:false}
   };
+
+  const farmerTamil={
+   "Overview":"கண்ணோட்டம்","Trends & outlook":"போக்குகள் மற்றும் முன்னோக்கு","Recommended actions":"பரிந்துரைக்கப்படும் நடவடிக்கைகள்","Feedback & reports":"கருத்துகள் மற்றும் அறிக்கைகள்","Switch workspace ↗":"பணியிடத்தை மாற்று ↗",
+   "CONNECTED TANK":"இணைக்கப்பட்ட நீர்நிலை","LATEST RECORDED STORAGE":"சமீபத்திய பதிவுசெய்யப்பட்ட நீர் இருப்பு","CROP WATER RISK":"பயிர் நீர் அபாயம்","Needs inputs":"தகவல்கள் தேவை","Not assessed":"மதிப்பீடு செய்யப்படவில்லை","repository tank metadata":"நீர்நிலைத் தரவுத்தள விவரங்கள்","Latest CSV storage ÷ listed capacity":"சமீபத்திய பதிவில் உள்ள நீர் ÷ குறிப்பிடப்பட்ட கொள்ளளவு",
+   "RISK CHECK":"அபாயச் சரிபார்ப்பு","Check conditions before irrigation.":"பாசனம் செய்வதற்கு முன் நிலைமைகளைச் சரிபார்க்கவும்.","Field risk cannot be verified without a validated forecast, crop stage and local observations.":"சரிபார்க்கப்பட்ட வானிலை முன்னறிவிப்பு, பயிரின் வளர்ச்சி நிலை மற்றும் உள்ளூர் கண்காணிப்புத் தகவல்கள் இல்லாமல் வயல் அபாயத்தை உறுதிப்படுத்த முடியாது.",
+   "Tank storage history":"நீர்நிலையின் நீர் இருப்பு வரலாறு","Daily historical readings from the repository CSV":"தரவுக் கோப்பிலிருந்து பெறப்பட்ட தினசரி வரலாற்றுப் பதிவுகள்","What should I do today?":"இன்று நான் என்ன செய்ய வேண்டும்?","Practical precautions":"நடைமுறை முன்னெச்சரிக்கைகள்",
+   "Check soil moisture first":"முதலில் மண்ணின் ஈரப்பதத்தைச் சரிபார்க்கவும்","Plan irrigation using field conditions and crop needs, not tank percentage alone.":"நீர்நிலையின் சதவீதத்தை மட்டும் நம்பாமல், வயல் நிலை மற்றும் பயிரின் தேவைக்கேற்ப பாசனத்தைத் திட்டமிடுங்கள்.",
+   "If heavy rain is forecast":"கனமழை முன்னறிவிப்பு இருந்தால்","Inspect drains, protect equipment and follow official flood guidance. Do not enter flooded channels.":"வடிகால்களைச் சரிபார்த்து, கருவிகளைப் பாதுகாத்து, அதிகாரப்பூர்வ வெள்ள வழிகாட்டுதலைப் பின்பற்றுங்கள். வெள்ளம் சூழ்ந்த கால்வாய்களுக்குள் செல்ல வேண்டாம்.",
+   "Plan water-efficient irrigation":"நீரைச் சிக்கனமாகப் பயன்படுத்தும் பாசனத்தைத் திட்டமிடுங்கள்","Prioritize water-sensitive crop stages and avoid unnecessary watering.":"நீர் தேவை அதிகமுள்ள முக்கியப் பயிர் வளர்ச்சி நிலைகளுக்கு முன்னுரிமை கொடுத்து, தேவையற்ற பாசனத்தைத் தவிர்க்கவும்.",
+   "Simple risk guide":"எளிய அபாய வழிகாட்டி","Conceptual guidance — not validated thresholds":"கருத்து அடிப்படையிலான வழிகாட்டி — சரிபார்க்கப்பட்ட வரம்புகள் அல்ல",
+   "Flood risk":"வெள்ள அபாயம்","Protect the field":"வயலைப் பாதுகாக்கவும்","Check drainage and monitor official warnings.":"வடிகால் வசதிகளைச் சரிபார்த்து, அதிகாரப்பூர்வ எச்சரிக்கைகளைக் கவனியுங்கள்.",
+   "Low water":"நீர் குறைவு","Conserve irrigation":"பாசன நீரைச் சிக்கனமாகப் பயன்படுத்துங்கள்","Check soil moisture, crop stage and approved schedule.":"மண்ணின் ஈரப்பதம், பயிரின் வளர்ச்சி நிலை மற்றும் அங்கீகரிக்கப்பட்ட அட்டவணையைச் சரிபார்க்கவும்.",
+   "Normal":"சாதாரண நிலை","Keep to the plan":"திட்டத்தைப் பின்பற்றுங்கள்","Follow normal irrigation while avoiding waste.":"நீரை வீணாக்காமல் வழக்கமான பாசனத் திட்டத்தைப் பின்பற்றுங்கள்.",
+   "Quality":"நீரின் தரம்","Confirm permitted use":"அனுமதிக்கப்பட்ட பயன்பாட்டை உறுதிப்படுத்தவும்","Irrigation suitability does not imply drinking-water safety.":"பாசனத்திற்குப் பொருத்தமான நீர் என்பது குடிப்பதற்கும் பாதுகாப்பானது என்று அர்த்தமல்ல.",
+   "Check soil moisture":"மண்ணின் ஈரப்பதத்தைச் சரிபார்க்கவும்","Use field observations and crop stage to guide irrigation.":"வயல் கண்காணிப்பு மற்றும் பயிரின் வளர்ச்சி நிலையை அடிப்படையாகக் கொண்டு பாசனத்தைத் திட்டமிடுங்கள்.",
+   "Review local forecast":"உள்ளூர் வானிலை முன்னறிவிப்பைப் பாருங்கள்","Check official rainfall and flood warnings.":"அதிகாரப்பூர்வ மழை மற்றும் வெள்ள எச்சரிக்கைகளைச் சரிபார்க்கவும்.",
+   "Inspect drainage":"வடிகால் வசதிகளைச் சரிபார்க்கவும்","Prepare drainage before heavy rain; keep away from flooded channels.":"கனமழைக்கு முன் வடிகால் வசதிகளைத் தயார் செய்யுங்கள்; வெள்ளம் சூழ்ந்த கால்வாய்களை அணுக வேண்டாம்.",
+   "Confirm usable water":"பயன்படுத்தக்கூடிய நீரை உறுதிப்படுத்தவும்","Check approved irrigation schedule and quality restrictions.":"அங்கீகரிக்கப்பட்ட பாசன அட்டவணை மற்றும் நீர்த் தரக் கட்டுப்பாடுகளைச் சரிபார்க்கவும்.",
+   "ACTION WORKSPACE":"நடவடிக்கைப் பகுதி","Practical prompts, not official alerts":"நடைமுறை வழிகாட்டல்கள்; அதிகாரப்பூர்வ எச்சரிக்கைகள் அல்ல","Final advice must use verified local conditions.":"இறுதி ஆலோசனை சரிபார்க்கப்பட்ட உள்ளூர் நிலைமைகளின் அடிப்படையில் இருக்க வேண்டும்.",
+   "Action checklist":"நடவடிக்கைச் சரிபார்ப்புப் பட்டியல்","Mark items as you complete them":"முடித்தவற்றைக் குறிக்கவும்",
+   "Rainfall change (%)":"மழைப்பொழிவு மாற்றம் (%)","Demand change (%)":"நீர் தேவை மாற்றம் (%)","Usable capacity (%)":"பயன்படுத்தக்கூடிய கொள்ளளவு (%)","Illustrative scenario index · not a forecast":"விளக்கத்திற்கான சூழ்நிலை மதிப்பீடு · முன்னறிவிப்பு அல்ல","Balanced input":"சமநிலையான உள்ளீடுகள்","Adjust assumptions to compare an illustrative score only.":"விளக்க மதிப்பீட்டை மட்டும் ஒப்பிட, அனுமானங்களை மாற்றவும்.","More retention potential under these assumptions":"இந்த அனுமானங்களின்படி நீரைத் தேக்குவதற்கான வாய்ப்பு அதிகம்","Greater scarcity pressure under these assumptions":"இந்த அனுமானங்களின்படி நீர் பற்றாக்குறை அழுத்தம் அதிகம்","Balanced input assumptions":"சமநிலையான அனுமானங்கள்","Illustrative score":"விளக்க மதிப்பெண்",
+   "Historical records loaded":"வரலாற்றுப் பதிவுகள் ஏற்றப்பட்டுள்ளன","Charts use dated rainfall and storage records from the repository CSV. They are historical observations, not live readings.":"வரைபடங்கள் தரவுக் கோப்பிலுள்ள தேதி வாரியான மழைப்பொழிவு மற்றும் நீர் இருப்புப் பதிவுகளைப் பயன்படுத்துகின்றன. இவை வரலாற்றுப் பதிவுகள்; நேரடி அளவீடுகள் அல்ல.",
+   "Predictions require validation":"முன்னறிவிப்புகளைச் சரிபார்க்க வேண்டும்","A one-year outlook needs a validated model, forecast horizon, confidence and update timestamp.":"ஒரு வருட முன்னோக்கிற்கு சரிபார்க்கப்பட்ட மாதிரி, முன்னறிவிப்பு காலவரம்பு, நம்பகத்தன்மை அளவு மற்றும் புதுப்பித்த நேரம் தேவை.",
+   "Model evaluation":"மாதிரி மதிப்பீடு","Test predictions on chronological holdout periods before presenting forecast claims.":"முன்னறிவிப்புகளை வெளியிடுவதற்கு முன், காலவரிசைப்படி ஒதுக்கப்பட்ட சோதனைத் தரவுகளில் அவற்றை மதிப்பிடுங்கள்.",
+   "Hydrology and storage signals":"நீரியல் மற்றும் நீர் இருப்பு குறியீடுகள்","Historical CSV readings for the selected tank · not a forecast":"தேர்ந்தெடுக்கப்பட்ட நீர்நிலையின் வரலாற்றுப் பதிவுகள் · முன்னறிவிப்பு அல்ல","How to read this view":"இந்தப் பார்வையை எப்படிப் புரிந்துகொள்வது","Separate evidence from forecasts":"தரவு ஆதாரங்களையும் முன்னறிவிப்புகளையும் தனித்தனியாகப் பாருங்கள்","Monthly data summary":"மாதாந்திர தரவுச் சுருக்கம்","Aggregated from the selected tank's daily historical CSV readings":"தேர்ந்தெடுக்கப்பட்ட நீர்நிலையின் தினசரி வரலாற்றுப் பதிவுகளிலிருந்து தொகுக்கப்பட்டது","Scenario explorer":"சூழ்நிலை ஆராய்ச்சி","Hypothetical inputs — not an operational recommendation":"கற்பனையான உள்ளீடுகள் — செயல்பாட்டு பரிந்துரை அல்ல","Full year":"முழு ஆண்டு","From month":"தொடக்க மாதம்","To month":"இறுதி மாதம்","Print / Save as PDF ↗":"அச்சிடு / PDF ஆகச் சேமி ↗",
+   "Report category":"அறிக்கை வகை","Tank / nearby eri":"நீர்நிலை / அருகிலுள்ள ஏரி","Problem / report details":"பிரச்சினை / அறிக்கை விவரங்கள்","Submit report":"அறிக்கையைச் சமர்ப்பிக்கவும்","Send feedback":"கருத்தை அனுப்பவும்","Your report is routed to the water authority, not the other audience":"உங்கள் அறிக்கை நீர்வள அதிகாரிகளுக்கு அனுப்பப்படும்","What happens next":"அடுத்து என்ன நடக்கும்","Submit → authority review → reply":"சமர்ப்பிப்பு → அதிகாரிகள் ஆய்வு → பதில்","My reports and replies":"எனது அறிக்கைகளும் பதில்களும்","No reports in this view yet":"இந்தப் பார்வையில் இன்னும் அறிக்கைகள் இல்லை","Received":"பெறப்பட்டது","In review":"ஆய்வில் உள்ளது","Resolved":"தீர்க்கப்பட்டது","Add reply":"பதிலைச் சேர்க்கவும்","Report status":"அறிக்கையின் நிலை"
+  };
+  function translateFarmerWorkspace(){
+   if(state.role!=="farmer"||state.farmerLanguage!=="ta")return;
+   const root=$("#dash-panel");if(!root)return;
+   const entries=Object.entries(farmerTamil).sort((a,b)=>b[0].length-a[0].length);
+   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+   const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+   nodes.forEach(node=>{let value=node.nodeValue;entries.forEach(([en,ta])=>{value=value.split(en).join(ta);});node.nodeValue=value;});
+   root.querySelectorAll("input[placeholder],textarea[placeholder],input[aria-label],canvas[aria-label]").forEach(el=>{
+    if(el.placeholder)entries.forEach(([en,ta])=>{el.placeholder=el.placeholder.split(en).join(ta);});
+    if(el.getAttribute("aria-label"))entries.forEach(([en,ta])=>{el.setAttribute("aria-label",el.getAttribute("aria-label").split(en).join(ta));});
+   });
+  }
+
   const loadReports=()=>{try{const raw=localStorage.getItem("awwe-reports")||sessionStorage.getItem("awwe-reports")||"[]";return JSON.parse(raw).map(r=>({...r,replies:Array.isArray(r.replies)?r.replies:(r.reply?[{text:r.reply,date:r.replyDate||""}]:[])}));}catch(_){return [];}};
-  const state={role:"household",panel:"overview",pin:"625003",tank:tanks[0],chart:null,reports:loadReports(),reportFilter:"all",nextReportId:1,formNotice:"",chartStartMonth:0,chartEndMonth:11};
+  const state={role:"household",panel:"overview",pin:"625003",tank:tanks[0],chart:null,reports:loadReports(),reportFilter:"all",nextReportId:1,formNotice:"",chartStartMonth:0,chartEndMonth:11,farmerLanguage:"en"};
   state.nextReportId=state.reports.reduce((max,r)=>Math.max(max,Number(r.id)||0),0)+1;
   const saveReports=()=>{try{localStorage.setItem("awwe-reports",JSON.stringify(state.reports));sessionStorage.setItem("awwe-reports",JSON.stringify(state.reports));}catch(_){state.formNotice="Browser storage is unavailable; export reports to preserve them.";}};
   let historicalRows=[];
@@ -213,9 +253,9 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
    }
    if(state.panel==="trends"){
     renderChart("trend-chart",selectedRows.map(row=>shortDate(row.timestamp)),[
-     {label:"Recorded rainfall (mm)",data:selectedRows.map(row=>Number(row.rainfall_mm)),color:"#6d9f95",fill:true},
-     {label:"Recorded storage (MCM)",data:selectedRows.map(row=>Number(row.current_storage_mcm)),color:"#c6a26a",axis:"y1"}
-    ],{y:"Rainfall (mm)",y1:"Storage (MCM)"});
+     {label:state.role==="farmer"&&state.farmerLanguage==="ta"?"பதிவான மழைப்பொழிவு (மிமீ)":"Recorded rainfall (mm)",data:selectedRows.map(row=>Number(row.rainfall_mm)),color:"#6d9f95",fill:true},
+     {label:state.role==="farmer"&&state.farmerLanguage==="ta"?"பதிவான நீர் இருப்பு (மில்லியன் கன மீட்டர்)":"Recorded storage (MCM)",data:selectedRows.map(row=>Number(row.current_storage_mcm)),color:"#c6a26a",axis:"y1"}
+    ],{y:state.role==="farmer"&&state.farmerLanguage==="ta"?"மழைப்பொழிவு (மிமீ)":"Rainfall (mm)",y1:state.role==="farmer"&&state.farmerLanguage==="ta"?"நீர் இருப்பு (மில்லியன் கன மீட்டர்)":"Storage (MCM)"});
    }
   }
   function scenario(){
@@ -224,8 +264,8 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
    if($("#demand-value"))$("#demand-value").textContent=(demand>0?"+":"")+demand+"%";
    if($("#capacity-value"))$("#capacity-value").textContent=capacity+"%";
    const score=rain*.55-demand*.8+(capacity-75)*.65;
-   if($("#scenario-result"))$("#scenario-result").textContent=score>18?"More retention potential under these assumptions":score< -18?"Greater scarcity pressure under these assumptions":"Balanced input assumptions";
-   if($("#scenario-detail"))$("#scenario-detail").textContent="Illustrative score "+score.toFixed(1)+". This does not predict actual tank behaviour or model hydraulic safety.";
+   if($("#scenario-result"))$("#scenario-result").textContent=state.role==="farmer"&&state.farmerLanguage==="ta"?(score>18?"இந்த அனுமானங்களின்படி நீரைத் தேக்குவதற்கான வாய்ப்பு அதிகம்":score< -18?"இந்த அனுமானங்களின்படி நீர் பற்றாக்குறை அழுத்தம் அதிகம்":"சமநிலையான அனுமானங்கள்"):(score>18?"More retention potential under these assumptions":score< -18?"Greater scarcity pressure under these assumptions":"Balanced input assumptions");
+   if($("#scenario-detail"))$("#scenario-detail").textContent=(state.role==="farmer"&&state.farmerLanguage==="ta"?"விளக்க மதிப்பெண் ":"Illustrative score ")+score.toFixed(1)+(state.role==="farmer"&&state.farmerLanguage==="ta"?". இது உண்மையான நீர்நிலை நடத்தையையோ நீரியல் பாதுகாப்பையோ கணிக்காது.":". This does not predict actual tank behaviour or model hydraulic safety.");
   }
   function bindPanel(){
    document.querySelectorAll("[data-print-pdf]").forEach(btn=>btn.addEventListener("click",()=>window.print()));
@@ -270,7 +310,7 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
     refresh();
    });
   }
-  function refresh(){const root=$("#dash-panel");if(root){if(state.chart){state.chart.destroy();state.chart=null;}root.innerHTML=panel();bindPanel();charts();}}
+  function refresh(){const root=$("#dash-panel");if(root){if(state.chart){state.chart.destroy();state.chart=null;}root.innerHTML=panel();bindPanel();charts();translateFarmerWorkspace();const langButton=$("#farmer-language-toggle");if(langButton){langButton.hidden=state.role!=="farmer";langButton.textContent=state.farmerLanguage==="en"?"தமிழ்":"English";langButton.setAttribute("aria-label",state.farmerLanguage==="en"?"தமிழில் காண்க":"View in English");}}}
   function open(role){
    state.role=role||state.role;state.panel="overview";const info=roles[state.role],modal=$("#dashboard-modal");
    modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
@@ -292,6 +332,7 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
    const msg=$("#postcode-message");if(msg)msg.textContent=exactTank?"Selected "+exactTank.name+" · PIN "+pin:tanks.filter(t=>t.pin===pin).length+" tank record(s) found for PIN "+pin+".";
   }
   document.addEventListener("click",e=>{
+   if(e.target.closest("#farmer-language-toggle")){state.farmerLanguage=state.farmerLanguage==="en"?"ta":"en";refresh();return;}
    const role=e.target.closest("[data-role]");if(role){open(role.dataset.role);return;}
    if(e.target.closest("[data-close]")){close();return;}
    const tab=e.target.closest("[data-panel]");if(tab){state.panel=tab.dataset.panel;$$(".side-link").forEach(b=>b.classList.toggle("active",b===tab));refresh();return;}
