@@ -288,7 +288,7 @@
      const authorityRows=historicalRows.filter(row=>row.tank_id===selected.id&&inSelectedMonths(row)).sort((a,b)=>a.timestamp-b.timestamp);
      const labels=authorityRows.map(row=>shortDate(row.timestamp));
      let runningRain=0;
-     const cumulativeRain=authorityRows.map(row=>{runningRain+=Number(row.rainfall_mm)||0;return +runningRain.toFixed(2);});
+     const cumulativeRain=authorityRows.map(row=>{runningRain+=(Number(row.rainfall_mm)||0);return +runningRain.toFixed(2);});
      renderChart("authority-rain-chart",labels,[
       {label:"Daily rainfall (mm)",data:authorityRows.map(row=>Number(row.rainfall_mm)),color:"#6d9f95",fill:true},
       {label:"Cumulative rainfall (mm)",data:cumulativeRain,color:"#c69b58",axis:"y1"}
