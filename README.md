@@ -10,10 +10,17 @@ Serve the repository root with GitHub Pages or a local static web server for the
 - **Farmers:** tank storage context, a simple risk interpretation, and prioritised precautions for irrigation, drainage and water conservation.
 - **Water authorities:** tank cascade overview, channel metadata and restoration signals, scenario comparison and review/approval workflow.
 - **Trends & outlook:** daily historical rainfall and storage charts loaded from `madurai_daily_hydrological_timeseries.csv`; charts start with the full available year selected and include From month / To month filters plus a Full year reset. Hypothetical scenario sliders remain illustrative.
-- **Feedback & reports:** audience-tagged household/farmer reports, an authority inbox with audience filters, report status controls, direct replies, and PIN/eri selection from repository metadata. Reports and replies currently persist only for the active browser session.
+- **Feedback & reports:** audience-tagged household/farmer reports, an authority inbox with audience filters, report status controls, timestamped multi-reply history, tank-specific submissions, browser-persistent storage, and CSV/PDF export options.
+
+- **Feedback records:** reports now persist in browser `localStorage` across reloads on the same browser, retain tank ID/name and category, and support multiple timestamped authority replies per report. Each workspace can print/save the current report view as PDF. The CSV export creates a one-row-per-report register with tank details, problem, status, and all replies grouped in one cell.
+- **Trends PDF:** each workspace's Trends & outlook page offers Print / Save as PDF. The print view includes the selected tank, selected month range, chart, and monthly rainfall/storage summary table; the default range is the full year 2025.
+- **Authority tank view:** all 12 repository tanks are shown as clickable relative-position markers based on their stored coordinates, with a complete tank index for selection. This is a schematic overview, not a navigation map.
+
 
 ## Source data and limitations
 The existing project files (UKM project PDF, outline PDF, report DOCX and CSVs) are preserved unchanged. Tank names, PINs, coordinates, capacity and siltation are loaded from `madurai_tank_master_metadata.csv`. The latest stored values and historical daily charts are loaded from `madurai_daily_hydrological_timeseries.csv`. The dataset is historical (currently through 31 December 2025), not live telemetry; it does not provide a validated one-year forecast or official public warning.
+
+Reports and replies are stored in this browser's local storage, not in a shared database. The CSV button downloads a snapshot; it does not write changes back into the repository or synchronize users on different devices. For shared real-time reporting, connect an authenticated backend/database and use server-side authorization.
 
 Tank storage does not prove a household has reliable treated supply. A production version should connect tank status to treatment facilities, distribution networks and official supply schedules; represent quantity separately from water quality; show timestamps and confidence; and never mark untested water safe to drink. Predictions and warnings need validation against local observations and official thresholds. Any proposed release, transfer or allocation must be reviewed and approved by authorized officials; this prototype does not control infrastructure.
 
