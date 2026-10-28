@@ -185,7 +185,8 @@
     '<div class="panel-grid authority-layout"><div>'+card("Tank cascade overview","All repository tanks · schematic relative positions, not a navigation map",'<div class="map-panel"><div class="map-art">'+markers+'</div><div class="map-legend"><span><i></i> Tank location</span><span>Choose a marker or tank in the register</span></div></div>'+tankIndex)+'</div><div>'+card("Selected tank · "+esc(t.name),"Tank ID "+esc(t.id)+" · PIN "+esc(t.pin),tankDetails)+'</div></div>'+
     '<div class="authority-section-heading"><span>02</span><div><h3>Hydrology & risk signals</h3><p>Historical observations for the selected tank and chosen month range.</p></div></div>'+
     '<div class="panel-grid authority-layout"><div>'+card("City-wide storage history","Daily aggregate across tanks · use the month controls to filter all authority charts.",canvas("main-chart"))+'</div></div>'+
-    '<div class="panel-grid authority-layout"><div>'+card("Rainfall, storage & water movement","Rainfall and flow are plotted on the left axis; storage is on the right.",chartOnly("authority-hydrology-chart"))+'</div><div>'+card("Historical flood & scarcity indices","CSV index values are displayed as recorded. Their definitions, scale and validation are not established by this UI.",chartOnly("authority-risk-chart"))+'</div></div>'+
+    '<div class="panel-grid authority-layout"><div>'+card("Daily & cumulative rainfall","Daily rainfall is shown on the left axis; cumulative rainfall for the selected period is on the right.",chartOnly("authority-rain-chart"))+'</div><div>'+card("Inflow vs discharge","Inflow, irrigation outflow and spillway discharge use the same recorded flow unit (m³/s).",chartOnly("authority-flow-chart"))+'</div></div>'+
+    '<div class="panel-grid authority-layout"><div>'+card("Historical flood & scarcity indices","CSV index values are displayed as recorded. Their definitions, scale and validation are not established by this UI.",chartOnly("authority-risk-chart"))+'</div></div>'+
     '<div class="panel-grid authority-layout"><div>'+card("Groundwater & evaporation","Historical CSV values; confirm measurement definitions and units before operational interpretation.",chartOnly("authority-groundwater-chart"))+'</div><div>'+card("Review priorities","Evidence to validate before action",priorities)+'</div></div>'+
     '<div class="authority-section-heading"><span>03</span><div><h3>Tank-cascade channel condition</h3><p>All channel links and infrastructure scores loaded from madurai_channel_cascade_network.csv.</p></div></div>'+
     card("Channel register · "+channels.length+" links","Designed versus effective capacity, encroachment, integrity and restoration priority",channelDataReady?'<div class="channel-list">'+network+'</div>':'<p class="chart-message">Channel CSV could not be loaded. No hardcoded channel values are being substituted.</p>')+
@@ -286,13 +287,17 @@
      ],{y:"Storage (MCM)"});
      const authorityRows=historicalRows.filter(row=>row.tank_id===selected.id&&inSelectedMonths(row)).sort((a,b)=>a.timestamp-b.timestamp);
      const labels=authorityRows.map(row=>shortDate(row.timestamp));
-     renderChart("authority-hydrology-chart",labels,[
-      {label:"Rainfall (mm)",data:authorityRows.map(row=>Number(row.rainfall_mm)),color:"#6d9f95",fill:true},
-      {label:"Storage (MCM)",data:authorityRows.map(row=>Number(row.current_storage_mcm)),color:"#c69b58",axis:"y1"},
-      {label:"Inflow (m³/s)",data:authorityRows.map(row=>Number(row.inflow_cumecs)),color:"#4b8c7e"},
+     let runningRain=0;
+     const cumulativeRain=authorityRows.map(row=>{runningRain+=Number(row.rainfall_mm)||0;return +runningRain.toFixed(2);});
+     renderChart("authority-rain-chart",labels,[
+      {label:"Daily rainfall (mm)",data:authorityRows.map(row=>Number(row.rainfall_mm)),color:"#6d9f95",fill:true},
+      {label:"Cumulative rainfall (mm)",data:cumulativeRain,color:"#c69b58",axis:"y1"}
+     ],{y:"Daily rainfall (mm)",y1:"Cumulative rainfall (mm)"});
+     renderChart("authority-flow-chart",labels,[
+      {label:"Inflow (m³/s)",data:authorityRows.map(row=>Number(row.inflow_cumecs)),color:"#4b8c7e",fill:true},
       {label:"Irrigation outflow (m³/s)",data:authorityRows.map(row=>Number(row.irrigation_outflow_cumecs)),color:"#ba8354"},
       {label:"Spillway discharge (m³/s)",data:authorityRows.map(row=>Number(row.spillway_discharge_cumecs)),color:"#8a79aa"}
-     ],{y:"Rainfall / flow (recorded units)",y1:"Storage (MCM)"});
+     ],{y:"Recorded flow (m³/s)"});
      renderChart("authority-risk-chart",labels,[
       {label:"Flood-risk index (CSV)",data:authorityRows.map(row=>Number(row.flood_risk_index)),color:"#b85f4a",fill:true},
       {label:"Scarcity-risk index (CSV)",data:authorityRows.map(row=>Number(row.scarcity_risk_index)),color:"#bd8c3f"}
