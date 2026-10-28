@@ -85,20 +85,24 @@
   }
   async function loadRepositoryData(){
    try{
-    const [metadataText,seriesText,channelText]=await Promise.all([
+    const [metadataText,seriesText]=await Promise.all([
      fetchRepositoryCSV("madurai_tank_master_metadata.csv"),
-     fetchRepositoryCSV("madurai_daily_hydrological_timeseries.csv"),
-     fetchRepositoryCSV("madurai_channel_cascade_network.csv")
+     fetchRepositoryCSV("madurai_daily_hydrological_timeseries.csv")
     ]);
     const metadata=parseCSV(metadataText);
-    const channelRows=parseCSV(channelText);
     historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)})).filter(r=>r.tank_id&&Number.isFinite(r.timestamp)).sort((a,b)=>a.timestamp-b.timestamp);
-    channels=channelRows.map(c=>{
-     const upstream=metadata.find(t=>t.tank_id===c.upstream_tank_id);
-     const downstream=metadata.find(t=>t.tank_id===c.downstream_tank_id);
-     return {id:c.channel_id,upstreamId:c.upstream_tank_id,downstreamId:c.downstream_tank_id,from:upstream?.tank_name||c.upstream_tank_id,to:downstream?.tank_name||c.downstream_tank_id,length:Number(c.channel_length_m),designed:Number(c.designed_capacity_cumecs),effective:Number(c.current_effective_capacity_cumecs),encroach:Number(c.encroachment_percentage),silt:String(c.siltation_level),integrity:Number(c.structural_integrity_score),priority:Number(c.restoration_priority_score),upstreamPin:c.upstream_tank_postcode,downstreamPin:c.downstream_tank_postcode};
-    });
-    channelDataReady=channels.length>0;
+    try{
+     const channelRows=parseCSV(await fetchRepositoryCSV("madurai_channel_cascade_network.csv"));
+     channels=channelRows.map(c=>{
+      const upstream=metadata.find(t=>t.tank_id===c.upstream_tank_id);
+      const downstream=metadata.find(t=>t.tank_id===c.downstream_tank_id);
+      return {id:c.channel_id,upstreamId:c.upstream_tank_id,downstreamId:c.downstream_tank_id,from:upstream?.tank_name||c.upstream_tank_id,to:downstream?.tank_name||c.downstream_tank_id,length:Number(c.channel_length_m),designed:Number(c.designed_capacity_cumecs),effective:Number(c.current_effective_capacity_cumecs),encroach:Number(c.encroachment_percentage),silt:String(c.siltation_level),integrity:Number(c.structural_integrity_score),priority:Number(c.restoration_priority_score),upstreamPin:c.upstream_tank_postcode,downstreamPin:c.downstream_tank_postcode};
+     });
+     channelDataReady=channels.length>0;
+    }catch(channelError){
+     channels=[];channelDataReady=false;
+     console.warn("AWWE channel cascade CSV could not be loaded:",channelError);
+    }
     repositoryLastDate=historicalRows.length?historicalRows[historicalRows.length-1].timestamp:null;
     const loaded=metadata.map(m=>{
      const rows=historicalRows.filter(r=>r.tank_id===m.tank_id);
