@@ -14,13 +14,8 @@
    {id:"TN_MDU_E011",name:"Anaiyur Eri",pin:"625017",capacity:4.69,storage:2.42,silt:12.9},
    {id:"TN_MDU_E012",name:"Paravai Kanmai",pin:"625402",capacity:12.33,storage:7.8,silt:30.5}
   ];
-  const channels=[
-   {from:"Madakulam Eri",to:"Vandiyur Kanmai",designed:8.34,effective:5.5,encroach:10.1,silt:"Severe",priority:42},
-   {from:"Vandiyur Kanmai",to:"Sellur Tank",designed:28.3,effective:15.33,encroach:39.6,silt:"Severe",priority:49.3},
-   {from:"Sellur Tank",to:"Thenur Periya Kanmai",designed:16.78,effective:10.32,encroach:21.3,silt:"Severe",priority:29.5},
-   {from:"Thenur Periya Kanmai",to:"Koodal Nagar Tank",designed:32.33,effective:28.01,encroach:33.4,silt:"Low",priority:35},
-   {from:"Koodal Nagar Tank",to:"Avaniapuram Tank",designed:17.03,effective:10.82,encroach:53.7,silt:"Moderate",priority:33.9}
-  ];
+  let channels=[];
+  let channelDataReady=false;
   const roles={
    household:{label:"LOCAL CONSUMERS / HOUSEHOLD",title:"Household water outlook",description:"Local water context and practical conservation guidance.",location:true},
    farmer:{label:"FIELD & FARM / AGRICULTURE",title:"Your field water outlook",description:"Understand the risk, then decide what to do today.",location:true},
@@ -67,7 +62,7 @@
   }
 
   const loadReports=()=>{try{const raw=localStorage.getItem("awwe-reports")||sessionStorage.getItem("awwe-reports")||"[]";return JSON.parse(raw).map(r=>({...r,replies:Array.isArray(r.replies)?r.replies:(r.reply?[{text:r.reply,date:r.replyDate||""}]:[])}));}catch(_){return [];}};
-  const state={role:"household",panel:"overview",pin:"625003",tank:tanks[0],chart:null,reports:loadReports(),reportFilter:"all",nextReportId:1,formNotice:"",chartStartMonth:0,chartEndMonth:11,farmerLanguage:"en"};
+  const state={role:"household",panel:"overview",pin:"625003",tank:tanks[0],chart:null,charts:{},reports:loadReports(),reportFilter:"all",nextReportId:1,formNotice:"",chartStartMonth:0,chartEndMonth:11,farmerLanguage:"en"};
   state.nextReportId=state.reports.reduce((max,r)=>Math.max(max,Number(r.id)||0),0)+1;
   const saveReports=()=>{try{localStorage.setItem("awwe-reports",JSON.stringify(state.reports));sessionStorage.setItem("awwe-reports",JSON.stringify(state.reports));}catch(_){state.formNotice="Browser storage is unavailable; export reports to preserve them.";}};
   let historicalRows=[];
@@ -90,17 +85,25 @@
   }
   async function loadRepositoryData(){
    try{
-    const [metadataText,seriesText]=await Promise.all([
+    const [metadataText,seriesText,channelText]=await Promise.all([
      fetchRepositoryCSV("madurai_tank_master_metadata.csv"),
-     fetchRepositoryCSV("madurai_daily_hydrological_timeseries.csv")
+     fetchRepositoryCSV("madurai_daily_hydrological_timeseries.csv"),
+     fetchRepositoryCSV("madurai_channel_cascade_network.csv")
     ]);
     const metadata=parseCSV(metadataText);
-historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)})).filter(r=>r.tank_id&&Number.isFinite(r.timestamp)).sort((a,b)=>a.timestamp-b.timestamp);
+    const channelRows=parseCSV(channelText);
+    historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)})).filter(r=>r.tank_id&&Number.isFinite(r.timestamp)).sort((a,b)=>a.timestamp-b.timestamp);
+    channels=channelRows.map(c=>{
+     const upstream=metadata.find(t=>t.tank_id===c.upstream_tank_id);
+     const downstream=metadata.find(t=>t.tank_id===c.downstream_tank_id);
+     return {id:c.channel_id,upstreamId:c.upstream_tank_id,downstreamId:c.downstream_tank_id,from:upstream?.tank_name||c.upstream_tank_id,to:downstream?.tank_name||c.downstream_tank_id,length:Number(c.channel_length_m),designed:Number(c.designed_capacity_cumecs),effective:Number(c.current_effective_capacity_cumecs),encroach:Number(c.encroachment_percentage),silt:String(c.siltation_level),integrity:Number(c.structural_integrity_score),priority:Number(c.restoration_priority_score),upstreamPin:c.upstream_tank_postcode,downstreamPin:c.downstream_tank_postcode};
+    });
+    channelDataReady=channels.length>0;
     repositoryLastDate=historicalRows.length?historicalRows[historicalRows.length-1].timestamp:null;
     const loaded=metadata.map(m=>{
      const rows=historicalRows.filter(r=>r.tank_id===m.tank_id);
      const latest=rows[rows.length-1];
-     return {id:m.tank_id,name:m.tank_name,pin:String(m.postcode),capacity:Number(m.storage_capacity_mcm),storage:latest?Number(latest.current_storage_mcm):0,silt:Number(m.siltation_percentage),latitude:Number(m.latitude),longitude:Number(m.longitude),catchment:Number(m.catchment_area_sqkm),fullLevel:Number(m.full_reservoir_level_m),deadStorage:Number(m.dead_storage_mcm),downstreamId:m.downstream_tank_id};
+     return {id:m.tank_id,name:m.tank_name,pin:String(m.postcode),capacity:Number(m.storage_capacity_mcm),storage:latest?Number(latest.current_storage_mcm):0,silt:Number(m.siltation_percentage),latitude:Number(m.latitude),longitude:Number(m.longitude),catchment:Number(m.catchment_area_sqkm),fullLevel:Number(m.full_reservoir_level_m),deadStorage:Number(m.dead_storage_mcm),sluiceGates:Number(m.sluice_gates_count),downstreamId:m.downstream_tank_id,downstreamName:metadata.find(x=>x.tank_id===m.downstream_tank_id)?.tank_name||"Not listed",tekHeritageScore:Number(m.tek_heritage_score),latestDate:latest?.timestamp??null,waterLevel:latest?Number(latest.current_water_level_m):NaN,inflow:latest?Number(latest.inflow_cumecs):NaN,irrigationOutflow:latest?Number(latest.irrigation_outflow_cumecs):NaN,spillway:latest?Number(latest.spillway_discharge_cumecs):NaN,rainfall:latest?Number(latest.rainfall_mm):NaN,floodRisk:latest?Number(latest.flood_risk_index):NaN,scarcityRisk:latest?Number(latest.scarcity_risk_index):NaN,groundwaterDepth:latest?Number(latest.groundwater_table_depth_m):NaN,evaporation:latest?Number(latest.evaporation_rate_mm):NaN};
     });
     if(!loaded.length)throw new Error("Tank metadata CSV contains no tank records");
     tanks.splice(0,tanks.length,...loaded);
@@ -117,12 +120,15 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
    if(modal?.classList.contains("open")){
     const info=roles[state.role],bar=$("#location-bar");
     if(bar)bar.outerHTML=info.location?pinBar():authorityPinBar();
-    refresh();
+    destroyCharts();refresh();
    }
   }
 
   const esc=v=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const pct=t=>Math.round(100*t.storage/t.capacity);
+  const pct=t=>Number.isFinite(t.capacity)&&t.capacity>0?Math.round(100*t.storage/t.capacity):0;
+  const num=(value,digits=2)=>Number.isFinite(Number(value))?Number(value).toFixed(digits):"Not recorded";
+  const chartOnly=id=>'<div class="chart-area"><div class="chart-wrap"><canvas id="'+id+'" aria-label="Historical tank indicators from repository CSV"></canvas></div></div>';
+  function destroyCharts(){Object.values(state.charts||{}).forEach(chart=>{try{chart.destroy();}catch(_){}});state.charts={};state.chart=null;}
   const level=t=>pct(t)<30?"Low":pct(t)<58?"Moderate":"Available";
   const tone=t=>pct(t)<30?"critical":pct(t)<58?"warn":"";
   const metric=(title,value,note,chip="",cls="")=>'<article class="metric-card"><div class="metric-label">'+title+'</div><div class="metric-value">'+value+'</div>'+(chip?'<span class="metric-chip '+cls+'">'+chip+'</span>':'')+'<div class="metric-note">'+note+'</div></article>';
@@ -147,10 +153,35 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
    const lats=tanks.map(t=>Number(t.latitude)).filter(Number.isFinite),lons=tanks.map(t=>Number(t.longitude)).filter(Number.isFinite);
    const minLat=Math.min(...lats),maxLat=Math.max(...lats),minLon=Math.min(...lons),maxLon=Math.max(...lons);
    const markers=tanks.map((t,i)=>{const x=10+(Number.isFinite(t.longitude)?(Number(t.longitude)-minLon)/Math.max(.0001,maxLon-minLon):i/Math.max(1,tanks.length-1))*80;const y=10+(Number.isFinite(t.latitude)?(maxLat-Number(t.latitude))/Math.max(.0001,maxLat-minLat):i/Math.max(1,tanks.length-1))*80;return '<button class="map-tank" style="left:'+x.toFixed(2)+'%;top:'+y.toFixed(2)+'%" title="'+esc(t.name)+' · '+esc(t.pin)+'" aria-label="Select '+esc(t.name)+'" data-tank="'+t.id+'"><span>'+esc(t.name)+'</span></button>';}).join("");
-   const tankIndex='<div class="tank-map-index">'+tanks.map(t=>'<button type="button" class="tank-index-item" data-tank="'+t.id+'"><strong>'+esc(t.name)+'</strong><small>'+esc(t.pin)+' · '+esc(t.id)+'</small></button>').join("")+'</div>';
-   const network=channels.slice().sort((a,b)=>b.priority-a.priority).map(c=>'<div class="tank-row"><div><strong>'+esc(c.from)+' → '+esc(c.to)+'</strong><small>'+esc(c.silt)+' siltation · '+c.encroach+'% encroachment</small><div class="bar-track"><div class="bar-fill '+(c.silt==="Severe"?"critical":"")+'" style="width:'+Math.min(100,c.priority*1.8)+'%"></div></div></div><div class="tank-value">'+c.priority+'<small>priority score</small></div></div>').join("");
-   const priorities='<div class="recommendation danger"><span class="rec-icon">!</span><div><strong>Inspect constrained channels</strong><p>Some network records show severe siltation and reduced conveyance. Verify in the field and review downstream risk.</p></div></div><div class="recommendation warn"><span class="rec-icon">≈</span><div><strong>Assess safe retention space</strong><p>Compare inflow with verified storage, structural safety and cascade capacity.</p></div></div><div class="recommendation"><span class="rec-icon">✓</span><div><strong>Keep the human approval step</strong><p>Authorized officials must approve releases and transfers after reviewing safe operating limits.</p></div></div>';
-   return '<div class="metric-grid">'+metric("TANK RECORDS",String(tanks.length),"Tank metadata in repository CSV")+metric("RECORDED CAPACITY",capacity.toFixed(1)+" MCM","Sum of listed capacity fields")+metric("LATEST RECORDED STORAGE",Math.round(stored/capacity*100)+"%","CSV reading: "+(repositoryLastDate?shortDate(repositoryLastDate):"date unavailable")+" · historical, not live","Historical","warn")+'</div><div class="panel-grid">'+card("Tank cascade overview","All 12 tanks · relative positions based on repository coordinates, not a navigation map",'<div class="map-panel"><div class="map-art">'+markers+'</div><div class="map-legend"><span><i></i> Tank location</span><span>Choose a marker or tank below</span></div></div>'+tankIndex)+card("Restoration signals","Channel metadata in repository",'<div class="tank-list">'+network+'</div>')+'</div><div class="panel-grid">'+card("Storage history","Daily total from historical CSV records · not live",canvas("main-chart"))+card("Review priorities","Validate before action",priorities)+'</div>';
+   const tankIndex='<div class="tank-map-index">'+tanks.map(t=>'<button type="button" class="tank-index-item '+(t.id===state.tank.id?'selected':'')+'" data-tank="'+t.id+'"><strong>'+esc(t.name)+'</strong><small>'+esc(t.pin)+' · '+esc(t.id)+'</small></button>').join("")+'</div>';
+   const t=state.tank,usable=Math.max(0,(Number(t.storage)||0)-(Number(t.deadStorage)||0));
+   const tankDetails='<div class="authority-detail-grid">'+
+    '<div class="detail-stat"><span>Recorded storage</span><strong>'+num(t.storage)+' MCM</strong><small>'+pct(t)+'% of listed capacity ('+num(t.capacity)+' MCM)</small></div>'+
+    '<div class="detail-stat"><span>Water level / full reservoir level</span><strong>'+num(t.waterLevel)+' / '+num(t.fullLevel)+' m</strong><small>Difference to FRL: '+(Number.isFinite(t.waterLevel)&&Number.isFinite(t.fullLevel)?num(t.fullLevel-t.waterLevel)+' m':'Not recorded')+'</small></div>'+
+    '<div class="detail-stat"><span>Dead storage</span><strong>'+num(t.deadStorage)+' MCM</strong><small>Metadata field</small></div>'+
+    '<div class="detail-stat"><span>Estimated water above dead storage</span><strong>'+num(usable)+' MCM</strong><small>Simple estimate; not a release approval</small></div>'+
+    '<div class="detail-stat"><span>Inflow</span><strong>'+num(t.inflow)+' m³/s</strong><small>Latest recorded daily row</small></div>'+
+    '<div class="detail-stat"><span>Irrigation outflow</span><strong>'+num(t.irrigationOutflow)+' m³/s</strong><small>Latest recorded daily row</small></div>'+
+    '<div class="detail-stat"><span>Spillway discharge</span><strong>'+num(t.spillway)+' m³/s</strong><small>Latest recorded daily row</small></div>'+
+    '<div class="detail-stat"><span>Daily rainfall (recorded)</span><strong>'+num(t.rainfall)+' mm</strong><small>Last dated row: '+(t.latestDate?shortDate(t.latestDate):"date unavailable")+'</small></div>'+
+    '<div class="detail-stat"><span>Groundwater-table depth</span><strong>'+num(t.groundwaterDepth)+' m</strong><small>Depth value as recorded in CSV</small></div>'+
+    '<div class="detail-stat"><span>Evaporation rate</span><strong>'+num(t.evaporation)+' mm</strong><small>Verify period/unit in source documentation</small></div>'+
+    '<div class="detail-stat"><span>Siltation</span><strong>'+num(t.silt,1)+'%</strong><small>Tank metadata</small></div>'+
+    '<div class="detail-stat"><span>Sluice gates</span><strong>'+num(t.sluiceGates,0)+'</strong><small>Tank metadata</small></div>'+
+    '<div class="detail-stat"><span>Downstream connection</span><strong>'+esc(t.downstreamName||"Not listed")+'</strong><small>'+esc(t.downstreamId||"No downstream ID")+'</small></div>'+
+    '</div><p class="data-caveat">Repository records through '+(repositoryLastDate?new Date(repositoryLastDate).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}):"the latest available date")+', not live telemetry. Estimated usable water = recorded storage minus listed dead storage, floored at zero; confirm operating rules before use.</p>';
+   const network=channels.slice().sort((a,b)=>b.priority-a.priority).map(c=>'<div class="channel-record"><div class="channel-heading"><strong>'+esc(c.from)+' → '+esc(c.to)+'</strong><span class="channel-id">'+esc(c.id)+'</span></div><div class="channel-metrics">'+
+    '<span><small>Designed</small><b>'+num(c.designed)+' m³/s</b></span><span><small>Effective</small><b>'+num(c.effective)+' m³/s</b></span><span><small>Capacity retained</small><b>'+num(c.designed>0?c.effective/c.designed*100:NaN,1)+'%</b></span><span><small>Encroachment</small><b>'+num(c.encroach,1)+'%</b></span><span><small>Structural integrity</small><b>'+num(c.integrity,1)+' / 10</b></span><span><small>Restoration priority</small><b>'+num(c.priority,1)+' / 100</b></span><span><small>Channel length</small><b>'+num(c.length,0)+' m</b></span><span><small>Siltation label</small><b>'+esc(c.silt)+'</b></span></div><div class="bar-track"><div class="bar-fill '+(["Severe","Critical"].includes(c.silt)?"critical":"")+'" style="width:'+Math.max(0,Math.min(100,c.priority))+'%"></div></div></div>').join("");
+   const priorities='<div class="recommendation danger"><span class="rec-icon">!</span><div><strong>Inspect priority channels</strong><p>Use restoration priority, effective conveyance and encroachment to guide field verification; CSV scores are not independently validated in this interface.</p></div></div><div class="recommendation warn"><span class="rec-icon">≈</span><div><strong>Investigate historical risk patterns</strong><p>Review rainfall, inflow, spillway discharge, groundwater depth and recorded flood/scarcity indices together.</p></div></div><div class="recommendation"><span class="rec-icon">✓</span><div><strong>Keep official approval in the loop</strong><p>Do not issue warnings or approve releases from historical values alone. Validate definitions, thresholds and current field conditions.</p></div></div>';
+   return '<div class="metric-grid authority-kpis">'+metric("TANK RECORDS",String(tanks.length),"Tank metadata loaded from repository CSV")+metric("RECORDED CAPACITY",capacity.toFixed(2)+" MCM","Sum of listed storage capacity")+metric("LATEST RECORDED STORAGE",num(stored,2)+" MCM",Math.round(stored/capacity*100)+"% of listed capacity · "+(repositoryLastDate?shortDate(repositoryLastDate):"date unavailable"),"Historical","warn")+metric("CHANNEL LINKS",String(channels.length),channelDataReady?"Loaded directly from cascade CSV":"Channel CSV not available")+'</div>'+
+    '<div class="authority-section-heading"><span>01</span><div><h3>Tank register & selection</h3><p>Select any tank to inspect its recorded operating snapshot below.</p></div></div>'+
+    '<div class="panel-grid authority-layout"><div>'+card("Tank cascade overview","All repository tanks · schematic relative positions, not a navigation map",'<div class="map-panel"><div class="map-art">'+markers+'</div><div class="map-legend"><span><i></i> Tank location</span><span>Choose a marker or tank in the register</span></div></div>'+tankIndex)+'</div><div>'+card("Selected tank · "+esc(t.name),"Tank ID "+esc(t.id)+" · PIN "+esc(t.pin),tankDetails)+'</div></div>'+
+    '<div class="authority-section-heading"><span>02</span><div><h3>Hydrology & risk signals</h3><p>Historical observations for the selected tank and chosen month range.</p></div></div>'+
+    '<div class="panel-grid authority-layout"><div>'+card("Rainfall, storage & water movement","Rainfall and flow are plotted on the left axis; storage is on the right.",chartOnly("authority-hydrology-chart"))+'</div><div>'+card("Historical flood & scarcity indices","CSV index values are displayed as recorded. Their definitions, scale and validation are not established by this UI.",chartOnly("authority-risk-chart"))+'</div></div>'+
+    '<div class="panel-grid authority-layout"><div>'+card("Groundwater & evaporation","Historical CSV values; confirm measurement definitions and units before operational interpretation.",chartOnly("authority-groundwater-chart"))+'</div><div>'+card("Review priorities","Evidence to validate before action",priorities)+'</div></div>'+
+    '<div class="authority-section-heading"><span>03</span><div><h3>Tank-cascade channel condition</h3><p>All channel links and infrastructure scores loaded from madurai_channel_cascade_network.csv.</p></div></div>'+
+    card("Channel register · "+channels.length+" links","Designed versus effective capacity, encroachment, integrity and restoration priority",channelDataReady?'<div class="channel-list">'+network+'</div>':'<p class="chart-message">Channel CSV could not be loaded. No hardcoded channel values are being substituted.</p>')+
+    '<p class="data-caveat"><strong>Review limitation:</strong> The daily CSV spans 2025 and is historical, not live. Flood-risk and scarcity-risk indices require source-definition and validation checks before use in any public warning. Structural-integrity and restoration-priority scales should also be confirmed against their data dictionary.</p>';
   }
   function trends(){
    const notes='<div class="recommendation"><span class="rec-icon">⌁</span><div><strong>Historical records loaded</strong><p>Charts use dated rainfall and storage records from the repository CSV. They are historical observations, not live readings.</p></div></div><div class="recommendation warn"><span class="rec-icon">◷</span><div><strong>Predictions require validation</strong><p>A one-year outlook needs a validated model, forecast horizon, confidence and update timestamp.</p></div></div><div class="recommendation"><span class="rec-icon">✓</span><div><strong>Model evaluation</strong><p>Test predictions on chronological holdout periods before presenting forecast claims.</p></div></div>';
@@ -211,7 +242,7 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
     return '<div class="empty-state"><strong>Section not found</strong><p>Choose another workspace section.</p></div>';
   }
   function renderChart(id,labels,sets,axisLabels={}){
-   if(state.chart){state.chart.destroy();state.chart=null;}
+   if(state.charts[id]){state.charts[id].destroy();delete state.charts[id];}
    const el=document.getElementById(id);if(!el)return;
    if(!repositoryDataReady||!historicalRows.length){
     el.parentElement.innerHTML='<div class="chart-message">'+esc(repositoryDataError||"Loading historical CSV data…")+'</div>';
@@ -223,7 +254,8 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
     y:{grid:{color:"#eff0e7"},ticks:{color:"#879285",font:{family:"DM Sans",size:8}},border:{display:false},title:{display:!!axisLabels.y,text:axisLabels.y||""}}
    };
    if(sets.some(set=>set.axis==="y1"))scales.y1={position:"right",grid:{drawOnChartArea:false},ticks:{color:"#879285",font:{family:"DM Sans",size:8}},border:{display:false},title:{display:!!axisLabels.y1,text:axisLabels.y1||""}};
-   state.chart=new Chart(el.getContext("2d"),{type:"line",data:{labels,datasets:sets.map(set=>({label:set.label,data:set.data,yAxisID:set.axis||"y",borderColor:set.color,backgroundColor:set.color+"20",borderWidth:2,fill:!!set.fill,tension:.25,pointRadius:0,pointHoverRadius:4,spanGaps:false}))},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{display:true,position:"bottom",labels:{boxWidth:8,boxHeight:8,usePointStyle:true,font:{family:"DM Sans",size:9},color:"#68796a",padding:14}},tooltip:{backgroundColor:"#284b3a",bodyFont:{family:"DM Sans",size:10},padding:10,cornerRadius:8}},scales}});
+   state.charts[id]=new Chart(el.getContext("2d"),{type:"line",data:{labels,datasets:sets.map(set=>({label:set.label,data:set.data,yAxisID:set.axis||"y",borderColor:set.color,backgroundColor:set.color+"20",borderWidth:2,fill:!!set.fill,tension:.25,pointRadius:0,pointHoverRadius:4,spanGaps:false}))},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{display:true,position:"bottom",labels:{boxWidth:8,boxHeight:8,usePointStyle:true,font:{family:"DM Sans",size:9},color:"#68796a",padding:14}},tooltip:{backgroundColor:"#284b3a",bodyFont:{family:"DM Sans",size:10},padding:10,cornerRadius:8}},scales}});
+   state.chart=state.charts[id];
   }
   function charts(){
    const selected=state.tank;
@@ -244,6 +276,23 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
       {label:"Recorded total storage (MCM)",data:points.map(([,v])=>+v.storage.toFixed(2)),color:"#4b8c7e",fill:true},
       {label:"Listed total capacity (MCM)",data:points.map(()=>+capacity.toFixed(2)),color:"#c69b58"}
      ],{y:"Storage (MCM)"});
+     const authorityRows=historicalRows.filter(row=>row.tank_id===selected.id&&inSelectedMonths(row)).sort((a,b)=>a.timestamp-b.timestamp);
+     const labels=authorityRows.map(row=>shortDate(row.timestamp));
+     renderChart("authority-hydrology-chart",labels,[
+      {label:"Rainfall (mm)",data:authorityRows.map(row=>Number(row.rainfall_mm)),color:"#6d9f95",fill:true},
+      {label:"Storage (MCM)",data:authorityRows.map(row=>Number(row.current_storage_mcm)),color:"#c69b58",axis:"y1"},
+      {label:"Inflow (m³/s)",data:authorityRows.map(row=>Number(row.inflow_cumecs)),color:"#4b8c7e"},
+      {label:"Irrigation outflow (m³/s)",data:authorityRows.map(row=>Number(row.irrigation_outflow_cumecs)),color:"#ba8354"},
+      {label:"Spillway discharge (m³/s)",data:authorityRows.map(row=>Number(row.spillway_discharge_cumecs)),color:"#8a79aa"}
+     ],{y:"Rainfall / flow (recorded units)",y1:"Storage (MCM)"});
+     renderChart("authority-risk-chart",labels,[
+      {label:"Flood-risk index (CSV)",data:authorityRows.map(row=>Number(row.flood_risk_index)),color:"#b85f4a",fill:true},
+      {label:"Scarcity-risk index (CSV)",data:authorityRows.map(row=>Number(row.scarcity_risk_index)),color:"#bd8c3f"}
+     ],{y:"Recorded index value"});
+     renderChart("authority-groundwater-chart",labels,[
+      {label:"Groundwater-table depth (m)",data:authorityRows.map(row=>Number(row.groundwater_table_depth_m)),color:"#498b82",fill:true},
+      {label:"Evaporation rate (CSV mm)",data:authorityRows.map(row=>Number(row.evaporation_rate_mm)),color:"#8a79aa",axis:"y1"}
+     ],{y:"Groundwater depth (m)",y1:"Evaporation (CSV mm)"});
     }else{
      renderChart("main-chart",selectedRows.map(row=>shortDate(row.timestamp)),[
       {label:"Recorded storage (MCM)",data:selectedRows.map(row=>Number(row.current_storage_mcm)),color:"#4d8b7e",fill:true},
@@ -310,7 +359,7 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
     refresh();
    });
   }
-  function refresh(){const root=$("#dash-panel");if(root){if(state.chart){state.chart.destroy();state.chart=null;}root.innerHTML=panel();bindPanel();charts();translateFarmerWorkspace();const langButton=$("#farmer-language-toggle");if(langButton){langButton.hidden=state.role!=="farmer";langButton.textContent=state.farmerLanguage==="en"?"தமிழ்":"English";langButton.setAttribute("aria-label",state.farmerLanguage==="en"?"தமிழில் காண்க":"View in English");}const ta=state.role==="farmer"&&state.farmerLanguage==="ta";$("#dash-kicker").textContent=ta?"விவசாயம் / வயல் பணியிடம்":roles[state.role].label;$("#dashboard-title").textContent=ta?"உங்கள் வயலுக்கான நீர் நிலவரம்":roles[state.role].title;$("#dash-description").textContent=ta?"அபாயத்தைப் புரிந்துகொண்டு, இன்று எடுக்க வேண்டிய நடவடிக்கையைத் தீர்மானிக்கவும்.":roles[state.role].description;const labels={overview:ta?"கண்ணோட்டம்":"Overview",trends:ta?"போக்குகள் மற்றும் முன்னோக்கு":"Trends & outlook",actions:ta?"பரிந்துரைக்கப்படும் நடவடிக்கைகள்":"Recommended actions",reports:ta?"கருத்துகள் மற்றும் அறிக்கைகள்":"Feedback & reports"};document.querySelectorAll(".side-link").forEach(b=>{const icon=b.querySelector("span");b.innerHTML=(icon?icon.outerHTML:"")+labels[b.dataset.panel];});$("#change-role").textContent=ta?"பணியிடத்தை மாற்று ↗":"Switch workspace ↗";}}
+  function refresh(){const root=$("#dash-panel");if(root){destroyCharts();root.innerHTML=panel();bindPanel();charts();translateFarmerWorkspace();const langButton=$("#farmer-language-toggle");if(langButton){langButton.hidden=state.role!=="farmer";langButton.textContent=state.farmerLanguage==="en"?"தமிழ்":"English";langButton.setAttribute("aria-label",state.farmerLanguage==="en"?"தமிழில் காண்க":"View in English");}const ta=state.role==="farmer"&&state.farmerLanguage==="ta";$("#dash-kicker").textContent=ta?"விவசாயம் / வயல் பணியிடம்":roles[state.role].label;$("#dashboard-title").textContent=ta?"உங்கள் வயலுக்கான நீர் நிலவரம்":roles[state.role].title;$("#dash-description").textContent=ta?"அபாயத்தைப் புரிந்துகொண்டு, இன்று எடுக்க வேண்டிய நடவடிக்கையைத் தீர்மானிக்கவும்.":roles[state.role].description;const labels={overview:ta?"கண்ணோட்டம்":"Overview",trends:ta?"போக்குகள் மற்றும் முன்னோக்கு":"Trends & outlook",actions:ta?"பரிந்துரைக்கப்படும் நடவடிக்கைகள்":"Recommended actions",reports:ta?"கருத்துகள் மற்றும் அறிக்கைகள்":"Feedback & reports"};document.querySelectorAll(".side-link").forEach(b=>{const icon=b.querySelector("span");b.innerHTML=(icon?icon.outerHTML:"")+labels[b.dataset.panel];});$("#change-role").textContent=ta?"பணியிடத்தை மாற்று ↗":"Switch workspace ↗";}}
   function open(role){
    state.role=role||state.role;state.panel="overview";const info=roles[state.role],modal=$("#dashboard-modal");
    modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
@@ -318,7 +367,7 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
    $("#location-bar").outerHTML=info.location?pinBar():authorityPinBar();
    $$(".side-link").forEach(b=>b.classList.toggle("active",b.dataset.panel==="overview"));refresh();
   }
-  function close(){const modal=$("#dashboard-modal");modal.classList.remove("open");modal.setAttribute("aria-hidden","true");document.body.style.overflow="";if(state.chart){state.chart.destroy();state.chart=null;}}
+  function close(){const modal=$("#dashboard-modal");modal.classList.remove("open");modal.setAttribute("aria-hidden","true");document.body.style.overflow="";destroyCharts();}
   function applyPin(){
    const input=$("#postcode");if(!input)return;
    const raw=input.value.trim().toLowerCase();
@@ -345,6 +394,6 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
   });
   document.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
   $$(".role-card").forEach(b=>b.addEventListener("click",()=>open(b.dataset.role)));
-  window.addEventListener("resize",()=>{if(state.chart)state.chart.resize();});
+  window.addEventListener("resize",()=>{Object.values(state.charts).forEach(chart=>chart.resize());});
   loadRepositoryData();
 })();
