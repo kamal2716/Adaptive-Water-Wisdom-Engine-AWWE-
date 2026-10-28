@@ -71,3 +71,7 @@
 .topline>.brand-name{position:absolute;left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap;max-width:calc(100% - 390px);overflow:hidden;text-overflow:ellipsis}
 @media(max-width:850px){.topline>.brand-name{font-size:12px;max-width:calc(100% - 260px)}}
 @media(max-width:620px){.topline>.brand-name{font-size:9px;letter-spacing:.015em;max-width:calc(100% - 100px);white-space:normal;line-height:1.2}.topline>.brand-name small{font-size:8px;margin-top:3px}}
+
+/* Farmer workspace language toggle */
+.dash-title-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}.dash-title-actions [hidden]{display:none!important}#farmer-language-toggle{border-color:#9dbb9e;background:#e9f0e3;color:#285a43;font-weight:800;min-width:76px}
+@media(max-width:620px){.dash-title-row{align-items:flex-start;gap:12px}.dash-title-actions{flex-direction:column;align-items:stretch}.dash-title-actions .subtle-button{white-space:nowrap;padding:8px 10px;font-size:10px}}
