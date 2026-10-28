@@ -27,7 +27,7 @@
    authority:{label:"PLANNING / AUTHORITY WORKSPACE",title:"Madurai water intelligence",description:"Review tank and channel conditions, potential risks and decision options.",location:false}
   };
   const loadReports=()=>{try{return JSON.parse(sessionStorage.getItem("awwe-reports")||"[]");}catch(_){return [];}};
-  const state={role:"household",panel:"overview",pin:"625003",tank:tanks[0],chart:null,reports:loadReports(),reportFilter:"all",nextReportId:1,formNotice:""};
+  const state={role:"household",panel:"overview",pin:"625003",tank:tanks[0],chart:null,reports:loadReports(),reportFilter:"all",nextReportId:1,formNotice:"",chartStartMonth:0,chartEndMonth:11};
   const saveReports=()=>{try{sessionStorage.setItem("awwe-reports",JSON.stringify(state.reports));}catch(_){}};
   let historicalRows=[];
   let repositoryDataReady=false;
@@ -39,13 +39,19 @@
    const headers=splitLine(lines.shift()||"");
    return lines.filter(line=>line.trim()).map(line=>{const cells=splitLine(line);return Object.fromEntries(headers.map((h,i)=>[h,cells[i]??""]));});
   };
-  const dateValue=value=>{const parts=String(value).split("/").map(Number);return parts.length===3?new Date(parts[2],parts[0]-1,parts[1]).getTime():NaN;};
+  const dateValue=value=>{const raw=String(value).trim();let match=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(match)return new Date(Number(match[3]),Number(match[1])-1,Number(match[2])).getTime();match=raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);if(match)return new Date(Number(match[1]),Number(match[2])-1,Number(match[3])).getTime();const parsed=Date.parse(raw);return Number.isFinite(parsed)?parsed:NaN;};
   const shortDate=timestamp=>new Date(timestamp).toLocaleDateString("en-IN",{day:"numeric",month:"short"});
+  async function fetchRepositoryCSV(filename){
+   let firstError;
+   try{const response=await fetch(new URL(filename,document.baseURI).href,{cache:"no-store"});if(!response.ok)throw new Error("HTTP "+response.status+" for "+filename);return await response.text();}catch(error){firstError=error;}
+   const rawUrl="https://raw.githubusercontent.com/kamal2716/Adaptive-Water-Wisdom-Engine-AWWE-/main/"+filename;
+   try{const response=await fetch(rawUrl,{cache:"no-store"});if(!response.ok)throw new Error("HTTP "+response.status+" for repository fallback");return await response.text();}catch(error){throw new Error("Could not fetch "+filename+". Local request: "+(firstError?.message||"failed")+"; repository fallback: "+(error?.message||"failed"));}
+  }
   async function loadRepositoryData(){
    try{
     const [metadataText,seriesText]=await Promise.all([
-     fetch("madurai_tank_master_metadata.csv").then(r=>{if(!r.ok)throw new Error("Tank metadata CSV returned "+r.status);return r.text();}),
-     fetch("madurai_daily_hydrological_timeseries.csv").then(r=>{if(!r.ok)throw new Error("Hydrological time-series CSV returned "+r.status);return r.text();})
+     fetchRepositoryCSV("madurai_tank_master_metadata.csv"),
+     fetchRepositoryCSV("madurai_daily_hydrological_timeseries.csv")
     ]);
     const metadata=parseCSV(metadataText);
 historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)})).filter(r=>r.tank_id&&Number.isFinite(r.timestamp)).sort((a,b)=>a.timestamp-b.timestamp);
@@ -62,7 +68,7 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
     state.tank=tanks.find(t=>t.id===state.tank?.id)||tanks[0];
     state.pin=state.tank.pin;
    }catch(error){
-    repositoryDataError="Could not load repository CSV data. Open the site through GitHub Pages or a local web server, not by opening index.html directly.";
+    repositoryDataError="Historical CSV data could not be fetched. Check your internet connection and confirm the two CSV files are available in the repository. Details: "+(error?.message||"unknown loading error");
     console.error("AWWE data loading failed:",error);
     repositoryDataReady=true;
    }
@@ -81,7 +87,7 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
   const metric=(title,value,note,chip="",cls="")=>'<article class="metric-card"><div class="metric-label">'+title+'</div><div class="metric-value">'+value+'</div>'+(chip?'<span class="metric-chip '+cls+'">'+chip+'</span>':'')+'<div class="metric-note">'+note+'</div></article>';
   const card=(title,sub,body)=>'<section class="panel-card"><div class="panel-title"><div><h3>'+title+'</h3>'+(sub?'<p>'+sub+'</p>':'')+'</div></div>'+body+'</section>';
   const tankRow=t=>'<div class="tank-row"><div><strong>'+esc(t.name)+'</strong><small>'+esc(t.id)+' · '+level(t)+'</small><div class="bar-track"><div class="bar-fill '+tone(t)+'" style="width:'+Math.min(100,pct(t))+'%"></div></div></div><div class="tank-value">'+pct(t)+'%<small>capacity</small></div></div>';
-  const canvas=id=>'<div class="chart-wrap"><canvas id="'+id+'" aria-label="Historical tank readings from repository CSV"></canvas></div>';
+  const canvas=id=>'<div class="chart-area"><div class="chart-controls"><label for="chart-from-month">From month</label><select id="chart-from-month" aria-label="Chart starting month">'+Array.from({length:12},(_,i)=>'<option value="'+i+'" '+(i===state.chartStartMonth?"selected":"")+'>'+new Date(2025,i,1).toLocaleDateString("en-IN",{month:"long"})+'</option>').join("")+'</select><label for="chart-to-month">To month</label><select id="chart-to-month" aria-label="Chart ending month">'+Array.from({length:12},(_,i)=>'<option value="'+i+'" '+(i===state.chartEndMonth?"selected":"")+'>'+new Date(2025,i,1).toLocaleDateString("en-IN",{month:"long"})+'</option>').join("")+'</select><button type="button" id="chart-full-year">Full year</button></div><div class="chart-wrap"><canvas id="'+id+'" aria-label="Historical tank readings from repository CSV"></canvas></div></div>';
   const pinBar=()=>'<div class="location-bar" id="location-bar"><label for="postcode">PIN / tank search</label><input id="postcode" list="tank-options" autocomplete="off" placeholder="Search PIN or tank name" value="'+esc(state.tank?state.tank.pin+" — "+state.tank.name:state.pin)+'" aria-label="Search PIN code or tank name"><datalist id="tank-options">'+tanks.map(t=>'<option value="'+esc(t.pin+" — "+t.name)+'"></option>').join("")+'</datalist><button id="apply-postcode">Find tank</button><span id="postcode-message">Search by PIN or tank name. A shared PIN can match multiple tanks.</span></div>';
   const authorityPinBar=()=>'<div class="location-bar authority-location" id="location-bar"><label>Available PINs / eri</label><div class="pin-chips">'+[...new Map(tanks.map(t=>[t.pin,t])).values()].map(t=>'<button type="button" class="pin-chip" data-pin="'+esc(t.pin)+'" title="Select '+esc(t.name)+'">'+esc(t.pin)+'<small>'+esc(t.name)+'</small></button>').join('')+'</div><span>'+tanks.length+' tank records · select a PIN to inspect its records</span></div>';
   function household(){
@@ -166,11 +172,12 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
     if(state.panel==="trends")renderChart("trend-chart",[],[]);
     return;
    }
-   const selectedRows=historicalRows.filter(row=>row.tank_id===selected.id).sort((a,b)=>a.timestamp-b.timestamp);
+   const inSelectedMonths=row=>{const month=new Date(row.timestamp).getMonth();return month>=state.chartStartMonth&&month<=state.chartEndMonth;};
+   const selectedRows=historicalRows.filter(row=>row.tank_id===selected.id&&inSelectedMonths(row)).sort((a,b)=>a.timestamp-b.timestamp);
    if(state.panel==="overview"){
     if(state.role==="authority"){
      const daily=new Map();
-     historicalRows.forEach(row=>{const current=daily.get(row.timestamp)||{storage:0};current.storage+=Number(row.current_storage_mcm)||0;daily.set(row.timestamp,current);});
+     historicalRows.filter(inSelectedMonths).forEach(row=>{const current=daily.get(row.timestamp)||{storage:0};current.storage+=Number(row.current_storage_mcm)||0;daily.set(row.timestamp,current);});
      const points=[...daily.entries()].sort((a,b)=>a[0]-b[0]);
      const capacity=tanks.reduce((sum,t)=>sum+t.capacity,0);
      renderChart("main-chart",points.map(([date])=>shortDate(date)),[
@@ -201,6 +208,10 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
    if($("#scenario-detail"))$("#scenario-detail").textContent="Illustrative score "+score.toFixed(1)+". This does not predict actual tank behaviour or model hydraulic safety.";
   }
   function bindPanel(){
+   const monthFrom=$("#chart-from-month"),monthTo=$("#chart-to-month"),fullYear=$("#chart-full-year");
+   if(monthFrom)monthFrom.addEventListener("change",()=>{state.chartStartMonth=Number(monthFrom.value);if(state.chartStartMonth>state.chartEndMonth)state.chartEndMonth=state.chartStartMonth;refresh();});
+   if(monthTo)monthTo.addEventListener("change",()=>{state.chartEndMonth=Number(monthTo.value);if(state.chartEndMonth<state.chartStartMonth)state.chartStartMonth=state.chartEndMonth;refresh();});
+   if(fullYear)fullYear.addEventListener("click",()=>{state.chartStartMonth=0;state.chartEndMonth=11;refresh();});
    const filter=$("#report-filter");
    if(filter)filter.addEventListener("change",()=>{state.reportFilter=filter.value;refresh();});
    document.querySelectorAll("[data-save-reply]").forEach(btn=>btn.addEventListener("click",()=>{
