@@ -89,7 +89,8 @@
      fetchRepositoryCSV("madurai_tank_master_metadata.csv"),
      fetchRepositoryCSV("madurai_daily_hydrological_timeseries.csv")
     ]);
-    const metadata=parseCSV(metadataText);
+    // Deduplicate exact tank IDs so repeated CSV rows cannot inflate the register.
+    const metadata=[...new Map(parseCSV(metadataText).filter(row=>row.tank_id).map(row=>[row.tank_id,row])).values()];
     historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)})).filter(r=>r.tank_id&&Number.isFinite(r.timestamp)).sort((a,b)=>a.timestamp-b.timestamp);
     try{
      const channelRows=parseCSV(await fetchRepositoryCSV("madurai_channel_cascade_network.csv"));
@@ -143,8 +144,15 @@
   const authorityPinBar=()=>'<div class="location-bar authority-location" id="location-bar"><label>Available PINs / eri</label><div class="pin-chips">'+[...new Map(tanks.map(t=>[t.pin,t])).values()].map(t=>'<button type="button" class="pin-chip" data-pin="'+esc(t.pin)+'" title="Select '+esc(t.name)+'">'+esc(t.pin)+'<small>'+esc(t.name)+'</small></button>').join('')+'</div><span>'+tanks.length+' tank records · select a PIN to inspect its records</span></div>';
   function household(){
    const t=state.tank;
+   const matchingTanks=tanks.filter(item=>String(item.pin)===String(state.pin));
+   const tankRecordsBody=matchingTanks.length
+    ?matchingTanks.map(tankRow).join("")
+    :'<p class="chart-message">No tank metadata records match PIN '+esc(state.pin)+'. Check the PIN or choose a listed tank.</p>';
+   const tankRecordsNote=matchingTanks.length===1
+    ?"One tank metadata record matches this PIN. Supply availability is not verified by this dataset."
+    :matchingTanks.length+" tank metadata records share this PIN. These are separate tank IDs, not duplicate household supply confirmations.";
    const advice='<div class="recommendation"><span class="rec-icon">✓</span><div><strong>Check official supply updates</strong><p>Confirm treatment, distribution timing and interruption notices with your local provider.</p></div></div><div class="recommendation"><span class="rec-icon">≈</span><div><strong>Save water where practical</strong><p>Repair leaks, reuse suitable greywater where permitted and prepare harvesting systems before heavy rain.</p></div></div><div class="recommendation warn"><span class="rec-icon">!</span><div><strong>Water quality is separate</strong><p>Untested water must not be treated as safe to drink. Check approved treatment and testing guidance.</p></div></div>';
-   return '<div class="metric-grid">'+metric("NEAREST TANK CONTEXT",esc(t.name),"Repository record · PIN "+t.pin)+metric("LATEST RECORDED STORAGE",pct(t)+"%","CSV reading: "+(repositoryLastDate?shortDate(repositoryLastDate):"date unavailable")+" · storage/capacity",level(t),tone(t))+metric("HOUSEHOLD SUPPLY","Unverified","Tank storage does not confirm treated supply or tap availability","Needs supply data","warn")+'</div><div class="panel-grid">'+card("Water context","Daily historical readings from the repository CSV",canvas("main-chart"))+card("What to do now","Useful household guidance",advice)+'</div><div class="panel-grid">'+card("Tank records","Reference data, not a live service",'<div class="tank-list">'+tanks.filter(t=>t.pin===state.pin).map(tankRow).concat(tanks.filter(t=>t.pin!==state.pin)).map(tankRow).join("")+'</div>')+card("Flood & drought readiness","Follow verified local information",'<div class="recommendation warn"><span class="rec-icon">☔</span><div><strong>Heavy rain expected?</strong><p>Follow official flood warnings and watch for verified tank release advisories. Stay away from flooded channels.</p></div></div><div class="recommendation"><span class="rec-icon">☼</span><div><strong>During a dry spell</strong><p>Use water-saving practices and seek confirmed local supply schedules.</p></div></div>')+'</div>';
+   return '<div class="metric-grid">'+metric("NEAREST TANK CONTEXT",esc(t.name),"Repository record · PIN "+t.pin)+metric("LATEST RECORDED STORAGE",pct(t)+"%","CSV reading: "+(repositoryLastDate?shortDate(repositoryLastDate):"date unavailable")+" · storage/capacity",level(t),tone(t))+metric("HOUSEHOLD SUPPLY","Unverified","Tank storage does not confirm treated supply or tap availability","Needs supply data","warn")+'</div><div class="panel-grid">'+card("Water context","Daily historical readings from the repository CSV",canvas("main-chart"))+card("What to do now","Useful household guidance",advice)+'</div><div class="panel-grid">'+card("Tank records for selected PIN",tankRecordsNote,'<div class="tank-list">'+tankRecordsBody+'</div>')+card("Flood & drought readiness","Follow verified local information",'<div class="recommendation warn"><span class="rec-icon">☔</span><div><strong>Heavy rain expected?</strong><p>Follow official flood warnings and watch for verified tank release advisories. Stay away from flooded channels.</p></div></div><div class="recommendation"><span class="rec-icon">☼</span><div><strong>During a dry spell</strong><p>Use water-saving practices and seek confirmed local supply schedules.</p></div></div>')+'</div>';
   }
   function farmer(){
    const t=state.tank;
