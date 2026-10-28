@@ -8,7 +8,7 @@ Serve the repository root with GitHub Pages or a local static web server for the
 ## Workspaces
 - **Households:** PIN entry, local tank context, practical conservation guidance, supply and quality caveats, and flood/drought readiness.
 - **Farmers:** tank storage context, a simple risk interpretation, and prioritised precautions for irrigation, drainage and water conservation.
-- **Water authorities:** tank cascade overview, channel metadata and restoration signals, scenario comparison and review/approval workflow.
+- **Water authorities:** organised city-level KPIs, clickable tank register, selected-tank operating snapshot, historical hydrology/risk charts, and all channel links sourced directly from `madurai_channel_cascade_network.csv`.
 - **Trends & outlook:** daily historical rainfall and storage charts loaded from `madurai_daily_hydrological_timeseries.csv`; charts start with the full available year selected and include From month / To month filters plus a Full year reset. Hypothetical scenario sliders remain illustrative.
 - **Feedback & reports:** audience-tagged household/farmer reports, an authority inbox with audience filters, report status controls, timestamped multi-reply history, tank-specific submissions, browser-persistent storage, and CSV/PDF export options.
 
@@ -18,7 +18,7 @@ Serve the repository root with GitHub Pages or a local static web server for the
 
 
 ## Source data and limitations
-The existing project files (UKM project PDF, outline PDF, report DOCX and CSVs) are preserved unchanged. Tank names, PINs, coordinates, capacity and siltation are loaded from `madurai_tank_master_metadata.csv`. The latest stored values and historical daily charts are loaded from `madurai_daily_hydrological_timeseries.csv`. The dataset is historical (currently through 31 December 2025), not live telemetry; it does not provide a validated one-year forecast or official public warning.
+The existing project files (UKM project PDF, outline PDF, report DOCX and CSVs) are preserved unchanged. Tank names, PINs, coordinates, capacity, dead storage, full reservoir level, siltation and sluice-gate counts are loaded from `madurai_tank_master_metadata.csv`. Daily storage, level, rainfall, inflow, irrigation outflow, spillway discharge, groundwater depth, evaporation and risk-index values are loaded from `madurai_daily_hydrological_timeseries.csv`. Channel links, designed/effective capacity, encroachment, siltation labels, structural-integrity scores and restoration-priority scores are loaded directly from `madurai_channel_cascade_network.csv`; channel values are not duplicated as hardcoded app data. The dataset is historical (currently through 31 December 2025), not live telemetry; it does not provide a validated one-year forecast or official public warning. The selected-tank usable-water figure is a transparent estimate (recorded storage minus listed dead storage, floored at zero), not a verified release volume. Risk indices are shown as raw historical values only; their definitions, scale, thresholds and validation must be confirmed before any real warning use. Confirm units and definitions for evaporation and infrastructure scores with the dataset owner before operational interpretation.
 
 Reports and replies are stored in this browser's local storage, not in a shared database. The CSV button downloads a snapshot; it does not write changes back into the repository or synchronize users on different devices. For shared real-time reporting, connect an authenticated backend/database and use server-side authorization.
 
