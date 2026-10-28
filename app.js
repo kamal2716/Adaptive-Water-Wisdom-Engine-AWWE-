@@ -126,7 +126,7 @@ historicalRows=parseCSV(seriesText).map(r=>({...r,timestamp:dateValue(r.date)}))
    return '<div class="risk-banner"><span class="risk-badge">ACTION WORKSPACE</span><div><strong>Practical prompts, not official alerts</strong><p>Final advice must use verified local conditions.</p></div></div>'+card("Action checklist","Mark items as you complete them",checklist);
   }
   function reports(){
-   const exportToolbar='<div class="workspace-toolbar"><div><strong>Feedback & reports</strong><small>Print this workspace or export the report register.</small></div><div class="toolbar-actions"><button type="button" class="toolbar-button secondary" data-export-csv>Download reports CSV</button><button type="button" class="toolbar-button" data-print-pdf>Print / Save as PDF ↗</button></div></div>';
+   const exportToolbar='<div class="workspace-toolbar"><div><strong>Feedback & reports</strong><small>Print this workspace or export the report register.</small></div><div class="toolbar-actions"><button type="button" class="toolbar-button secondary" data-export-csv>Download reports CSV</button><button type="button" class="toolbar-button" data-print-pdf>Print / Save as PDF ↗</button></div></div><p class="print-only">Feedback & reports · Workspace: '+esc(roles[state.role].title)+' · Generated '+esc(new Date().toLocaleString())+'</p>';
    if(state.role==="authority"){
     const all=state.reports,visible=all.filter(r=>state.reportFilter==="all"||r.audience===state.reportFilter);
     const counts={all:all.length,household:all.filter(r=>r.audience==="household").length,farmer:all.filter(r=>r.audience==="farmer").length};
