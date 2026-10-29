@@ -88,8 +88,11 @@ def _make_supervised(frame: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     out["month"] = out[DATE_COL].dt.month
     out["target_next_day"] = out.groupby(ID_COL)[TARGET].shift(-1)
     out["target_date"] = out.groupby(ID_COL)[DATE_COL].shift(-1)
-    # Baseline prediction at day t is persistence: today's target predicts tomorrow's.
-    out["baseline_prediction"] = out[TARGET]
+    # Baselines use only information available on the input day t.
+    grouped_target = out.groupby(ID_COL)[TARGET]
+    out["baseline_persistence"] = out[TARGET]
+    out["baseline_rolling3"] = grouped_target.transform(lambda s: s.rolling(3, min_periods=1).mean())
+    out["baseline_rolling7"] = grouped_target.transform(lambda s: s.rolling(7, min_periods=1).mean())
     features = numeric + [f"{c}_lag1" for c in numeric] + [f"{c}_mean3" for c in numeric] + ["day_of_year", "month"]
     out = out.replace([np.inf, -np.inf], np.nan)
     out = out.dropna(subset=["target_next_day", "target_date", TARGET])
@@ -113,19 +116,16 @@ def _fit() -> dict[str, Any]:
         raise ValueError(f"Need at least 30 distinct dates for chronological evaluation; found {len(unique_dates)}.")
     train_cut = unique_dates[int(len(unique_dates) * 0.70)]
     val_cut = unique_dates[int(len(unique_dates) * 0.85)]
-    # Split on the label date (tomorrow), not just the feature date, so no
-    # training label crosses into the validation/test future window.
-    train = supervised[supervised["target_date"] < train_cut]
-    val = supervised[(supervised["target_date"] >= train_cut) & (supervised["target_date"] < val_cut)]
-    test = supervised[supervised["target_date"] >= val_cut]
+    # Split by label date (tomorrow) to keep every target inside its assigned period.
+    train = supervised[supervised["target_date"] < train_cut].copy()
+    val = supervised[(supervised["target_date"] >= train_cut) & (supervised["target_date"] < val_cut)].copy()
+    test = supervised[supervised["target_date"] >= val_cut].copy()
     if min(len(train), len(val), len(test)) == 0:
         raise ValueError("Chronological split produced an empty train, validation or test set.")
 
-    # Fit imputers using training data only; medians are reused unchanged.
     medians = train[features].median(numeric_only=True).fillna(0)
     x_train = train[features].fillna(medians)
     x_val = val[features].fillna(medians)
-    x_test = test[features].fillna(medians)
     y_train = train["target_next_day"].astype(float).to_numpy()
     y_val = val["target_next_day"].astype(float).to_numpy()
     y_test = test["target_next_day"].astype(float).to_numpy()
@@ -136,46 +136,104 @@ def _fit() -> dict[str, Any]:
         "Histogram Gradient Boosting": HistGradientBoostingRegressor(max_iter=150, learning_rate=0.06, l2_regularization=1.0, random_state=42),
     }
     validation_scores = {}
-    fitted = {}
     for name, candidate in candidates.items():
         candidate.fit(x_train, y_train)
-        prediction = candidate.predict(x_val)
-        fitted[name] = candidate
-        validation_scores[name] = float(mean_absolute_error(y_val, prediction))
+        validation_scores[name] = float(mean_absolute_error(y_val, candidate.predict(x_val)))
     _model_name = min(validation_scores, key=validation_scores.get)
-    # Final selected model is refit on train + validation, never on the test set.
-    train_val = supervised[supervised[DATE_COL] < val_cut]
+
+    # Baselines are compared on validation; select one without looking at test scores.
+    baseline_columns = {
+        "Persistence (today's index)": "baseline_persistence",
+        "3-day rolling average": "baseline_rolling3",
+        "7-day rolling average": "baseline_rolling7",
+    }
+    validation_baselines = {
+        name: float(mean_absolute_error(y_val, val[col].astype(float).to_numpy()))
+        for name, col in baseline_columns.items()
+    }
+    selected_baseline_name = min(validation_baselines, key=validation_baselines.get)
+    selected_baseline_col = baseline_columns[selected_baseline_name]
+
+    # Feature-group ablation is scored on validation only; test data is not used to tune.
+    feature_groups = {
+        "Rainfall": ["rainfall_mm"],
+        "Inflow": ["inflow_cumecs"],
+        "Groundwater depth": ["groundwater_table_depth_m"],
+        "Storage and water level": ["current_storage_mcm", "current_water_level_m"],
+        "Weather and evaporation": ["temp_max_c", "temp_min_c", "humidity_pct", "evaporation_rate_mm"],
+        "Water operations": ["irrigation_outflow_cumecs", "spillway_discharge_cumecs"],
+        "Flood index": ["flood_risk_index"],
+        "Scarcity history": [TARGET],
+    }
+    feature_ablation = []
+    for group_name, source_cols in feature_groups.items():
+        group_cols = [c for c in features if c in source_cols or any(c.startswith(src + "_lag1") or c.startswith(src + "_mean3") for src in source_cols)]
+        if not group_cols or len(features) <= len(group_cols):
+            continue
+        reduced_features = [c for c in features if c not in group_cols]
+        reduced_medians = train[reduced_features].median(numeric_only=True).fillna(0)
+        reduced_model = candidates[_model_name].__class__(**candidates[_model_name].get_params())
+        reduced_model.fit(train[reduced_features].fillna(reduced_medians), y_train)
+        reduced_mae = float(mean_absolute_error(y_val, reduced_model.predict(val[reduced_features].fillna(reduced_medians))))
+        feature_ablation.append({
+            "removed_group": group_name,
+            "validation_mae_without_group": round(reduced_mae, 6),
+            "full_model_validation_mae": round(validation_scores[_model_name], 6),
+            "mae_change_when_removed": round(reduced_mae - validation_scores[_model_name], 6),
+            "interpretation": "Group may add validation signal" if reduced_mae > validation_scores[_model_name] else "No measured validation benefit from this group in this ablation",
+        })
+
+    # Final fit uses train+validation only. The chronological test set is evaluated once.
+    train_val = supervised[supervised["target_date"] < val_cut].copy()
     final_medians = train_val[features].median(numeric_only=True).fillna(0)
     final_model = candidates[_model_name]
     final_model.fit(train_val[features].fillna(final_medians), train_val["target_next_day"].astype(float))
     model_pred = final_model.predict(test[features].fillna(final_medians))
-    baseline_pred = test["baseline_prediction"].astype(float).to_numpy()
+    test_baselines = {
+        name: _metrics(y_test, test[col].astype(float).to_numpy())
+        for name, col in baseline_columns.items()
+    }
+    selected_baseline_pred = test[selected_baseline_col].astype(float).to_numpy()
     model_metrics = _metrics(y_test, model_pred)
-    baseline_metrics = _metrics(y_test, baseline_pred)
-    improvement = baseline_metrics["mae"] - model_metrics["mae"]
-    beat_baseline = model_metrics["mae"] < baseline_metrics["mae"]
-    test_rows = test[[DATE_COL, "target_date", ID_COL, TARGET, "target_next_day"]].copy()
+    selected_baseline_metrics = test_baselines[selected_baseline_name]
+    improvement = selected_baseline_metrics["mae"] - model_metrics["mae"]
+
+    test_rows = test[[DATE_COL, "target_date", ID_COL, "target_next_day"]].copy()
     test_rows["model_prediction"] = model_pred
-    test_rows["baseline_prediction"] = baseline_pred
-    sample = []
-    for _, row in test_rows.tail(12).iterrows():
-        sample.append({
-            "date": row[DATE_COL].strftime("%Y-%m-%d"), "target_date": row["target_date"].strftime("%Y-%m-%d"),
-            "tank_id": str(row[ID_COL]),
-            "observed_next_day_scarcity_index": round(float(row["target_next_day"]), 5),
-            "ml_prediction": round(float(row["model_prediction"]), 5),
-            "baseline_prediction": round(float(row["baseline_prediction"]), 5),
+    test_rows["persistence_prediction"] = test["baseline_persistence"].astype(float).to_numpy()
+    test_rows["rolling3_prediction"] = test["baseline_rolling3"].astype(float).to_numpy()
+    test_rows["rolling7_prediction"] = test["baseline_rolling7"].astype(float).to_numpy()
+    per_tank = []
+    for tank_id, group in test_rows.groupby(ID_COL):
+        actual = group["target_next_day"].to_numpy(dtype=float)
+        per_tank.append({
+            "tank_id": str(tank_id), "rows": int(len(group)),
+            "ml": _metrics(actual, group["model_prediction"].to_numpy(dtype=float)),
+            "persistence": _metrics(actual, group["persistence_prediction"].to_numpy(dtype=float)),
+            "rolling3": _metrics(actual, group["rolling3_prediction"].to_numpy(dtype=float)),
+            "rolling7": _metrics(actual, group["rolling7_prediction"].to_numpy(dtype=float)),
         })
+    test_predictions = []
+    for _, row in test_rows.sort_values([ID_COL, DATE_COL]).iterrows():
+        test_predictions.append({
+            "date": row[DATE_COL].strftime("%Y-%m-%d"),
+            "target_date": row["target_date"].strftime("%Y-%m-%d"),
+            "tank_id": str(row[ID_COL]),
+            "observed_next_day_scarcity_index": round(float(row["target_next_day"]), 6),
+            "ml_prediction": round(float(row["model_prediction"]), 6),
+            "persistence_prediction": round(float(row["persistence_prediction"]), 6),
+            "rolling3_prediction": round(float(row["rolling3_prediction"]), 6),
+            "rolling7_prediction": round(float(row["rolling7_prediction"]), 6),
+        })
+
     _model = final_model
     _feature_columns = features
     _data = frame
+    beats_selected_baseline = model_metrics["mae"] < selected_baseline_metrics["mae"]
     _evaluation = {
-        "status": "evaluated",
-        "model_name": _model_name,
-        "target": "next-day scarcity_risk_index",
-        "dataset_file": DATA_PATH.name,
-        "source_rows": int(len(frame)),
-        "supervised_rows": int(len(supervised)),
+        "status": "evaluated", "model_name": _model_name,
+        "target": "next-day scarcity_risk_index", "dataset_file": DATA_PATH.name,
+        "source_rows": int(len(frame)), "supervised_rows": int(len(supervised)),
         "tank_count": int(frame[ID_COL].nunique()),
         "first_date": frame[DATE_COL].min().strftime("%Y-%m-%d"),
         "last_date": frame[DATE_COL].max().strftime("%Y-%m-%d"),
@@ -183,18 +241,23 @@ def _fit() -> dict[str, Any]:
         "validation_period": {"start": val["target_date"].min().strftime("%Y-%m-%d"), "end": val["target_date"].max().strftime("%Y-%m-%d"), "rows": int(len(val))},
         "test_period": {"start": test["target_date"].min().strftime("%Y-%m-%d"), "end": test["target_date"].max().strftime("%Y-%m-%d"), "rows": int(len(test))},
         "validation_mae_by_model": {k: round(v, 6) for k, v in validation_scores.items()},
-        "test_ml": model_metrics,
-        "test_baseline": baseline_metrics,
+        "validation_mae_by_baseline": {k: round(v, 6) for k, v in validation_baselines.items()},
+        "selected_baseline_by_validation": selected_baseline_name,
+        "test_ml": model_metrics, "test_baseline": selected_baseline_metrics,
+        "test_baselines": test_baselines,
         "mae_improvement": round(float(improvement), 6),
-        "improvement_percent": round(float(100 * improvement / baseline_metrics["mae"]), 2) if baseline_metrics["mae"] else None,
-        "beats_baseline": bool(beat_baseline),
-        "interpretation": "ML beats persistence baseline on the chronological holdout." if beat_baseline else "ML does not beat persistence baseline on the chronological holdout. Do not claim model improvement.",
-        "sample_predictions": sample,
+        "improvement_percent": round(float(100 * improvement / selected_baseline_metrics["mae"]), 2) if selected_baseline_metrics["mae"] else None,
+        "beats_baseline": bool(beats_selected_baseline),
+        "interpretation": f"ML beats the validation-selected baseline ({selected_baseline_name}) on the chronological holdout." if beats_selected_baseline else f"ML does not beat the validation-selected baseline ({selected_baseline_name}) on the chronological holdout. Do not claim model improvement.",
+        "feature_ablation_validation": feature_ablation,
+        "per_tank_test_metrics": per_tank,
+        "test_predictions": test_predictions,
+        "sample_predictions": test_predictions[-12:],
+        "test_set_used_for_tuning": False,
         "experimental": True,
-        "warning": "Historical/synthetic-data experiment only. Not an official warning; no real-world validation or live telemetry.",
+        "warning": "Historical/synthetic-data experiment only. Test results are reported after model selection; no real-world validation or live telemetry.",
     }
     return _evaluation
-
 
 @app.on_event("startup")
 def startup_train() -> None:
