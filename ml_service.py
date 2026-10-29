@@ -154,7 +154,7 @@ def _fit() -> dict[str, Any]:
     baseline_metrics = _metrics(y_test, baseline_pred)
     improvement = baseline_metrics["mae"] - model_metrics["mae"]
     beat_baseline = model_metrics["mae"] < baseline_metrics["mae"]
-    test_rows = test[[DATE_COL, ID_COL, TARGET, "target_next_day"]].copy()
+    test_rows = test[[DATE_COL, "target_date", ID_COL, TARGET, "target_next_day"]].copy()
     test_rows["model_prediction"] = model_pred
     test_rows["baseline_prediction"] = baseline_pred
     sample = []
