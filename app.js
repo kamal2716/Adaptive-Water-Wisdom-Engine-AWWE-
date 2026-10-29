@@ -95,7 +95,7 @@
   }
 
   const loadReports=()=>{try{const raw=localStorage.getItem("awwe-reports")||sessionStorage.getItem("awwe-reports")||"[]";return JSON.parse(raw).map(r=>({...r,replies:Array.isArray(r.replies)?r.replies:(r.reply?[{text:r.reply,date:r.replyDate||""}]:[])}));}catch(_){return [];}};
-  const state={role:"household",panel:"overview",pin:"625003",tank:tanks[0],chart:null,charts:{},reports:loadReports(),reportFilter:"all",nextReportId:1,formNotice:"",chartStartMonth:0,chartEndMonth:11,farmerLanguage:"en",simDateIndex:0};
+  const state={role:"household",panel:"overview",pin:"625003",tank:tanks[0],chart:null,charts:{},reports:loadReports(),reportFilter:"all",nextReportId:1,formNotice:"",chartStartMonth:0,chartEndMonth:11,farmerLanguage:"en",simDateIndex:0,mlApiBase:"http://127.0.0.1:8000",mlApiData:null,mlApiError:""};
   let simulatorTimer=null;
   state.nextReportId=state.reports.reduce((max,r)=>Math.max(max,Number(r.id)||0),0)+1;
   const saveReports=()=>{try{localStorage.setItem("awwe-reports",JSON.stringify(state.reports));sessionStorage.setItem("awwe-reports",JSON.stringify(state.reports));}catch(_){state.formNotice="Browser storage is unavailable; export reports to preserve them.";}};
@@ -365,8 +365,48 @@
    const rows=exportRows.map(r=>{const tank=tanks.find(t=>t.id===r.tankId)||tanks.find(t=>t.pin===r.pin),replies=Array.isArray(r.replies)?r.replies:(r.reply?[{text:r.reply,date:r.replyDate||""}]:[]);return [r.id,r.type,r.audience,r.tankName||tank?.name||"",r.tankId||tank?.id||"",r.pin,r.detail,r.date,r.status||"Received",replies.map((x,i)=>"Reply "+(i+1)+" ("+(x.date||"date not recorded")+"): "+(x.text||"")).join("\n"),replies.length?replies[replies.length-1].date||"":""].map(csvCell).join(",");});
    const csv="\uFEFF"+[headers.map(csvCell).join(","),...rows].join("\r\n"),blob=new Blob([csv],{type:"text/csv;charset=utf-8;"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="AWWE_feedback_reports_"+new Date().toISOString().slice(0,10)+".csv";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
   }
+  function mlLabPanel(){
+   return '<section class="ml-lab-section"><div class="authority-section-heading"><span>ML</span><div><h3>ML Lab & verification</h3><p>Python-trained scarcity-index experiment · bottom of the workspace</p></div><span class="ml-experimental-tag">EXPERIMENTAL</span></div><div class="panel-card ml-lab-card">'+
+    '<div class="ml-api-controls"><label for="ml-api-url">Python API URL</label><input id="ml-api-url" type="url" value="'+esc(state.mlApiBase)+'" placeholder="http://127.0.0.1:8000"><button type="button" class="toolbar-button" id="ml-connect">Connect / refresh</button><button type="button" class="toolbar-button secondary" id="ml-run-evaluation">Run evaluation</button></div>'+
+    '<div id="ml-status-box" class="ml-status-box offline"><strong>Checking Python API…</strong><p>Waiting for Python evaluation results.</p></div><div id="ml-results"><div class="ml-placeholder"><strong>Waiting for Python results</strong><p>This panel will show actual metrics returned by the Python service. No fake scores are generated in the browser.</p></div></div>'+
+    '<p class="ml-method-note"><strong>Method:</strong> Python compares candidate regressors using validation MAE, then reports performance on later unseen dates against a persistence baseline (today’s index predicts tomorrow’s index).</p><p class="ml-warning-note">Historical/synthetic dataset through 31 Dec 2025 only. The model evaluates agreement with the recorded index, not real-world scarcity. Not an official warning service.</p></div></section>';
+  }
+  function renderMlLab(data){
+   const box=$("#ml-status-box"),results=$("#ml-results");if(!box||!results)return;
+   if(!data){
+    box.className="ml-status-box offline";box.innerHTML='<strong>Python API unavailable or model not ready</strong><p>'+esc(state.mlApiError||"Start the Python service, then connect again.")+'</p>';
+    results.innerHTML='<div class="ml-placeholder"><strong>No evaluation results yet</strong><p>Run <code>uvicorn ml_service:app --reload --port 8000</code> after installing <code>requirements-ml.txt</code> and confirming the CSV is beside <code>ml_service.py</code>.</p></div>';return;
+   }
+   const good=!!data.beats_baseline;box.className="ml-status-box "+(good?"good":"caution");
+   box.innerHTML='<strong>Python connected · '+(good?"ML beats baseline on held-out dates":"ML did not beat baseline on held-out dates")+'</strong><p>'+esc(data.interpretation||"Evaluation complete.")+'</p>';
+   const metric=(label,value,note)=>'<div class="ml-metric"><span>'+esc(label)+'</span><strong>'+esc(value===undefined||value===null?"—":String(value))+'</strong><small>'+esc(note||"")+'</small></div>';
+   const samples=(data.sample_predictions||[]).slice(-8);
+   results.innerHTML='<div class="ml-metrics">'+
+    metric("Selected model",data.model_name,"Chosen on validation data")+
+    metric("ML test MAE",data.test_ml?.mae,"Lower is better")+
+    metric("Baseline test MAE",data.test_baseline?.mae,"Persistence baseline")+
+    metric("Test RMSE",data.test_ml?.rmse,"Held-out dates")+
+    metric("Test rows",data.test_period?.rows,"Chronological holdout")+
+    metric("MAE improvement",data.improvement_percent===null||data.improvement_percent===undefined?"n/a":data.improvement_percent+"%",good?"Beats baseline":"Does not beat baseline")+'</div>'+
+    '<div class="ml-period-grid"><div><b>Training</b><span>'+esc(data.train_period?.start||"—")+' – '+esc(data.train_period?.end||"—")+'</span><small>'+esc(data.train_period?.rows??"—")+' rows</small></div><div><b>Validation</b><span>'+esc(data.validation_period?.start||"—")+' – '+esc(data.validation_period?.end||"—")+'</span><small>'+esc(data.validation_period?.rows??"—")+' rows</small></div><div><b>Unseen test</b><span>'+esc(data.test_period?.start||"—")+' – '+esc(data.test_period?.end||"—")+'</span><small>'+esc(data.test_period?.rows??"—")+' rows</small></div></div>'+
+    '<div class="ml-sample-wrap"><h4>Holdout sample predictions</h4><p>Observed next-day index versus Python prediction and baseline.</p><div class="ml-table-scroll"><table class="ml-table"><thead><tr><th>Date</th><th>Tank</th><th>Observed</th><th>ML</th><th>Baseline</th></tr></thead><tbody>'+samples.map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(x.tank_id)+'</td><td>'+Number(x.observed_next_day_scarcity_index).toFixed(3)+'</td><td>'+Number(x.ml_prediction).toFixed(3)+'</td><td>'+Number(x.baseline_prediction).toFixed(3)+'</td></tr>').join("")+'</tbody></table></div></div>';
+  }
+  async function loadMlStatus(){
+   let base=String(state.mlApiBase||"http://127.0.0.1:8000").trim();while(base.endsWith("/"))base=base.slice(0,-1);state.mlApiBase=base;
+   try{const response=await fetch(base+"/api/ml/status");const data=await response.json();if(!response.ok)throw new Error(data.detail||data.error||("HTTP "+response.status));if(data.status!=="evaluated")throw new Error(data.error||"Model is not ready");state.mlApiData=data;state.mlApiError="";renderMlLab(data);}
+   catch(error){state.mlApiData=null;state.mlApiError=error?.message||"Could not connect";renderMlLab(null);}
+  }
+  function bindMlLab(){
+   const input=$("#ml-api-url"),connect=$("#ml-connect"),run=$("#ml-run-evaluation");if(!input)return;input.value=state.mlApiBase;
+   const baseFromInput=()=>{state.mlApiBase=String(input.value||"http://127.0.0.1:8000").trim();while(state.mlApiBase.endsWith("/"))state.mlApiBase=state.mlApiBase.slice(0,-1);};
+   if(connect)connect.addEventListener("click",()=>{baseFromInput();loadMlStatus();});
+   if(run)run.addEventListener("click",async()=>{baseFromInput();run.disabled=true;run.textContent="Evaluating…";const box=$("#ml-status-box");if(box){box.className="ml-status-box offline";box.innerHTML="<strong>Running Python evaluation…</strong><p>Training candidates and checking the chronological holdout.</p>";}
+    try{const response=await fetch(state.mlApiBase+"/api/ml/evaluate",{method:"POST",headers:{"Accept":"application/json"}});const data=await response.json();if(!response.ok)throw new Error(data.detail||data.error||("HTTP "+response.status));if(data.status!=="evaluated")throw new Error(data.error||"Evaluation did not complete");state.mlApiData=data;state.mlApiError="";renderMlLab(data);}
+    catch(error){state.mlApiData=null;state.mlApiError=error?.message||"Evaluation failed";renderMlLab(null);}finally{run.disabled=false;run.textContent="Run evaluation";}});
+   loadMlStatus();
+  }
   function panel(){
-    if(state.panel==="overview") return state.role==="authority" ? authority() : (state.role==="farmer" ? farmer() : household()) + tankFlowSimulator();
+    if(state.panel==="overview") return (state.role==="authority" ? authority() : (state.role==="farmer" ? farmer() : household()) + tankFlowSimulator()) + mlLabPanel();
     if(state.panel==="trends") return trends();
     if(state.panel==="actions") return actions();
     if(state.panel==="reports") return reports();
@@ -494,7 +534,7 @@
     refresh();
    });
   }
-  function refresh(){const root=$("#dash-panel");if(root){if(simulatorTimer){clearInterval(simulatorTimer);simulatorTimer=null;}destroyCharts();root.innerHTML=panel();bindPanel();bindTankSimulator();charts();translateWorkspace();const langButton=$("#farmer-language-toggle");if(langButton){langButton.hidden=false;langButton.textContent=state.farmerLanguage==="en"?"தமிழ்":"English";langButton.setAttribute("aria-label",state.farmerLanguage==="en"?"தமிழில் காண்க":"View in English");}const ta=state.farmerLanguage==="ta";const headers={household:["குடும்பம் / நீர் அணுகல்","குடும்ப நீர் நிலவரம்","உள்ளூர் நீர் நிலவரம் மற்றும் நீரைச் சிக்கனமாகப் பயன்படுத்துவதற்கான நடைமுறை வழிகாட்டுதல்."],farmer:["விவசாயம் / வயல் பணியிடம்","உங்கள் வயலுக்கான நீர் நிலவரம்","அபாயத்தைப் புரிந்துகொண்டு, இன்று எடுக்க வேண்டிய நடவடிக்கையைத் தீர்மானிக்கவும்."],authority:["திட்டமிடல் / அதிகாரிகள் பணியிடம்","மதுரை நீர்வளத் தகவல் மையம்","நீர்நிலைகள் மற்றும் கால்வாய்களின் நிலை, சாத்தியமான அபாயங்கள், முடிவெடுக்கும் விருப்பங்கள் ஆகியவற்றை ஆய்வு செய்யவும்."]};const h=headers[state.role];$("#dash-kicker").textContent=ta?h[0]:roles[state.role].label;$("#dashboard-title").textContent=ta?h[1]:roles[state.role].title;$("#dash-description").textContent=ta?h[2]:roles[state.role].description;const labels={overview:ta?"கண்ணோட்டம்":"Overview",trends:ta?"போக்குகள் மற்றும் முன்னோக்கு":"Trends & outlook",actions:ta?"பரிந்துரைக்கப்படும் நடவடிக்கைகள்":"Recommended actions",reports:ta?"கருத்துகள் மற்றும் அறிக்கைகள்":"Feedback & reports"};document.querySelectorAll(".side-link").forEach(b=>{const icon=b.querySelector("span");b.innerHTML=(icon?icon.outerHTML:"")+labels[b.dataset.panel];});$("#change-role").textContent=ta?"பணியிடத்தை மாற்று ↗":"Switch workspace ↗";}}
+  function refresh(){const root=$("#dash-panel");if(root){if(simulatorTimer){clearInterval(simulatorTimer);simulatorTimer=null;}destroyCharts();root.innerHTML=panel();bindPanel();bindTankSimulator();charts();bindMlLab();translateWorkspace();const langButton=$("#farmer-language-toggle");if(langButton){langButton.hidden=false;langButton.textContent=state.farmerLanguage==="en"?"தமிழ்":"English";langButton.setAttribute("aria-label",state.farmerLanguage==="en"?"தமிழில் காண்க":"View in English");}const ta=state.farmerLanguage==="ta";const headers={household:["குடும்பம் / நீர் அணுகல்","குடும்ப நீர் நிலவரம்","உள்ளூர் நீர் நிலவரம் மற்றும் நீரைச் சிக்கனமாகப் பயன்படுத்துவதற்கான நடைமுறை வழிகாட்டுதல்."],farmer:["விவசாயம் / வயல் பணியிடம்","உங்கள் வயலுக்கான நீர் நிலவரம்","அபாயத்தைப் புரிந்துகொண்டு, இன்று எடுக்க வேண்டிய நடவடிக்கையைத் தீர்மானிக்கவும்."],authority:["திட்டமிடல் / அதிகாரிகள் பணியிடம்","மதுரை நீர்வளத் தகவல் மையம்","நீர்நிலைகள் மற்றும் கால்வாய்களின் நிலை, சாத்தியமான அபாயங்கள், முடிவெடுக்கும் விருப்பங்கள் ஆகியவற்றை ஆய்வு செய்யவும்."]};const h=headers[state.role];$("#dash-kicker").textContent=ta?h[0]:roles[state.role].label;$("#dashboard-title").textContent=ta?h[1]:roles[state.role].title;$("#dash-description").textContent=ta?h[2]:roles[state.role].description;const labels={overview:ta?"கண்ணோட்டம்":"Overview",trends:ta?"போக்குகள் மற்றும் முன்னோக்கு":"Trends & outlook",actions:ta?"பரிந்துரைக்கப்படும் நடவடிக்கைகள்":"Recommended actions",reports:ta?"கருத்துகள் மற்றும் அறிக்கைகள்":"Feedback & reports"};document.querySelectorAll(".side-link").forEach(b=>{const icon=b.querySelector("span");b.innerHTML=(icon?icon.outerHTML:"")+labels[b.dataset.panel];});$("#change-role").textContent=ta?"பணியிடத்தை மாற்று ↗":"Switch workspace ↗";}}
   function open(role){
    state.role=role||state.role;state.panel="overview";const info=roles[state.role],modal=$("#dashboard-modal");
    modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
