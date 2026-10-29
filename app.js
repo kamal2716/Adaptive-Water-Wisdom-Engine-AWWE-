@@ -415,7 +415,7 @@
    loadMlStatus();
   }
   function panel(){
-    if(state.panel==="overview") return (state.role==="authority" ? authority() : (state.role==="farmer" ? farmer() : household()) + tankFlowSimulator()) + mlLabPanel();
+    if(state.panel==="overview") return state.role==="authority" ? authority() : (state.role==="farmer" ? farmer() : household()) + tankFlowSimulator();
     if(state.panel==="trends") return trends();
     if(state.panel==="actions") return actions();
     if(state.panel==="reports") return reports();
@@ -543,7 +543,7 @@
     refresh();
    });
   }
-  function refresh(){const root=$("#dash-panel");if(root){if(simulatorTimer){clearInterval(simulatorTimer);simulatorTimer=null;}destroyCharts();root.innerHTML=panel();bindPanel();bindTankSimulator();charts();bindMlLab();translateWorkspace();const langButton=$("#farmer-language-toggle");if(langButton){langButton.hidden=false;langButton.textContent=state.farmerLanguage==="en"?"தமிழ்":"English";langButton.setAttribute("aria-label",state.farmerLanguage==="en"?"தமிழில் காண்க":"View in English");}const ta=state.farmerLanguage==="ta";const headers={household:["குடும்பம் / நீர் அணுகல்","குடும்ப நீர் நிலவரம்","உள்ளூர் நீர் நிலவரம் மற்றும் நீரைச் சிக்கனமாகப் பயன்படுத்துவதற்கான நடைமுறை வழிகாட்டுதல்."],farmer:["விவசாயம் / வயல் பணியிடம்","உங்கள் வயலுக்கான நீர் நிலவரம்","அபாயத்தைப் புரிந்துகொண்டு, இன்று எடுக்க வேண்டிய நடவடிக்கையைத் தீர்மானிக்கவும்."],authority:["திட்டமிடல் / அதிகாரிகள் பணியிடம்","மதுரை நீர்வளத் தகவல் மையம்","நீர்நிலைகள் மற்றும் கால்வாய்களின் நிலை, சாத்தியமான அபாயங்கள், முடிவெடுக்கும் விருப்பங்கள் ஆகியவற்றை ஆய்வு செய்யவும்."]};const h=headers[state.role];$("#dash-kicker").textContent=ta?h[0]:roles[state.role].label;$("#dashboard-title").textContent=ta?h[1]:roles[state.role].title;$("#dash-description").textContent=ta?h[2]:roles[state.role].description;const labels={overview:ta?"கண்ணோட்டம்":"Overview",trends:ta?"போக்குகள் மற்றும் முன்னோக்கு":"Trends & outlook",actions:ta?"பரிந்துரைக்கப்படும் நடவடிக்கைகள்":"Recommended actions",reports:ta?"கருத்துகள் மற்றும் அறிக்கைகள்":"Feedback & reports"};document.querySelectorAll(".side-link").forEach(b=>{const icon=b.querySelector("span");b.innerHTML=(icon?icon.outerHTML:"")+labels[b.dataset.panel];});$("#change-role").textContent=ta?"பணியிடத்தை மாற்று ↗":"Switch workspace ↗";}}
+  function refresh(){const root=$("#dash-panel");if(root){if(simulatorTimer){clearInterval(simulatorTimer);simulatorTimer=null;}destroyCharts();root.innerHTML=panel();bindPanel();bindTankSimulator();charts();translateWorkspace();const langButton=$("#farmer-language-toggle");if(langButton){langButton.hidden=false;langButton.textContent=state.farmerLanguage==="en"?"தமிழ்":"English";langButton.setAttribute("aria-label",state.farmerLanguage==="en"?"தமிழில் காண்க":"View in English");}const ta=state.farmerLanguage==="ta";const headers={household:["குடும்பம் / நீர் அணுகல்","குடும்ப நீர் நிலவரம்","உள்ளூர் நீர் நிலவரம் மற்றும் நீரைச் சிக்கனமாகப் பயன்படுத்துவதற்கான நடைமுறை வழிகாட்டுதல்."],farmer:["விவசாயம் / வயல் பணியிடம்","உங்கள் வயலுக்கான நீர் நிலவரம்","அபாயத்தைப் புரிந்துகொண்டு, இன்று எடுக்க வேண்டிய நடவடிக்கையைத் தீர்மானிக்கவும்."],authority:["திட்டமிடல் / அதிகாரிகள் பணியிடம்","மதுரை நீர்வளத் தகவல் மையம்","நீர்நிலைகள் மற்றும் கால்வாய்களின் நிலை, சாத்தியமான அபாயங்கள், முடிவெடுக்கும் விருப்பங்கள் ஆகியவற்றை ஆய்வு செய்யவும்."]};const h=headers[state.role];$("#dash-kicker").textContent=ta?h[0]:roles[state.role].label;$("#dashboard-title").textContent=ta?h[1]:roles[state.role].title;$("#dash-description").textContent=ta?h[2]:roles[state.role].description;const labels={overview:ta?"கண்ணோட்டம்":"Overview",trends:ta?"போக்குகள் மற்றும் முன்னோக்கு":"Trends & outlook",actions:ta?"பரிந்துரைக்கப்படும் நடவடிக்கைகள்":"Recommended actions",reports:ta?"கருத்துகள் மற்றும் அறிக்கைகள்":"Feedback & reports"};document.querySelectorAll(".side-link").forEach(b=>{const icon=b.querySelector("span");b.innerHTML=(icon?icon.outerHTML:"")+labels[b.dataset.panel];});$("#change-role").textContent=ta?"பணியிடத்தை மாற்று ↗":"Switch workspace ↗";}}
   function open(role){
    state.role=role||state.role;state.panel="overview";const info=roles[state.role],modal=$("#dashboard-modal");
    modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
@@ -579,5 +579,6 @@
   document.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
   $$(".role-card").forEach(b=>b.addEventListener("click",()=>open(b.dataset.role)));
   window.addEventListener("resize",()=>{Object.values(state.charts).forEach(chart=>chart.resize());});
+  bindMlLab();
   loadRepositoryData();
 })();
