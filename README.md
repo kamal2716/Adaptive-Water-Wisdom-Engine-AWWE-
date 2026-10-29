@@ -33,3 +33,16 @@ Tank storage does not prove a household has reliable treated supply. A productio
 
 ## Deployment
 The root is a static site and can be deployed with GitHub Pages or a static hosting provider. Feedback reports and authority replies are session-only in this prototype; connect an authenticated server/database with role-based authorization and audit history before use beyond demonstration.
+
+## Experimental Python ML Lab
+The workspace Overview now includes an **ML Lab & verification** panel at the bottom. It connects to a Python API and displays actual train/validation/test periods, held-out MAE/RMSE, persistence-baseline comparison, and sample predictions returned by Python. It does not invent browser-side evaluation scores.
+
+To run the ML service locally, see [ML_README.md](ML_README.md). Install [requirements-ml.txt](requirements-ml.txt), place the hydrological CSV beside `ml_service.py` (or set `AWWE_DATA_CSV`), and start:
+
+```bash
+uvicorn ml_service:app --reload --port 8000
+```
+
+Then open the dashboard and keep the ML Lab API URL as `http://127.0.0.1:8000`, and choose **Connect / refresh** or **Run evaluation**. The current static website does not host Python by itself; the Python API must be running separately. For a public deployment, host the API separately and set the panel's API URL to that HTTPS endpoint.
+
+The ML target is the next-day recorded scarcity index. It uses a chronological split, model selection on validation data, and a later holdout comparison against a persistence baseline. The source dataset is synthetic/unvalidated historical data ending 31 December 2025, so this demonstrates the ML workflow only. It is not a real-world forecast or an official warning system.
