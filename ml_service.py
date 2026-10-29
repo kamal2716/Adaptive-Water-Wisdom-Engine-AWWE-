@@ -26,7 +26,7 @@ TARGET = "scarcity_risk_index"
 ID_COL = "tank_id"
 DATE_COL = "date"
 NUMERIC_FEATURES = [
-    "rainfall_mm", "temperature_c", "humidity_pct", "evaporation_rate_mm",
+    "rainfall_mm", "temp_max_c", "temp_min_c", "humidity_pct", "evaporation_rate_mm",
     "inflow_cumecs", "current_water_level_m", "current_storage_mcm",
     "irrigation_outflow_cumecs", "spillway_discharge_cumecs",
     "groundwater_table_depth_m", "flood_risk_index", TARGET,
@@ -87,11 +87,12 @@ def _make_supervised(frame: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     out["day_of_year"] = out[DATE_COL].dt.dayofyear
     out["month"] = out[DATE_COL].dt.month
     out["target_next_day"] = out.groupby(ID_COL)[TARGET].shift(-1)
+    out["target_date"] = out.groupby(ID_COL)[DATE_COL].shift(-1)
     # Baseline prediction at day t is persistence: today's target predicts tomorrow's.
     out["baseline_prediction"] = out[TARGET]
     features = numeric + [f"{c}_lag1" for c in numeric] + [f"{c}_mean3" for c in numeric] + ["day_of_year", "month"]
     out = out.replace([np.inf, -np.inf], np.nan)
-    out = out.dropna(subset=["target_next_day", TARGET])
+    out = out.dropna(subset=["target_next_day", "target_date", TARGET])
     return out, features
 
 
@@ -107,14 +108,16 @@ def _fit() -> dict[str, Any]:
     global _model, _evaluation, _data, _feature_columns, _model_name
     frame = _load_frame()
     supervised, features = _make_supervised(frame)
-    unique_dates = np.array(sorted(supervised[DATE_COL].dropna().unique()))
+    unique_dates = np.array(sorted(supervised["target_date"].dropna().unique()))
     if len(unique_dates) < 30:
         raise ValueError(f"Need at least 30 distinct dates for chronological evaluation; found {len(unique_dates)}.")
     train_cut = unique_dates[int(len(unique_dates) * 0.70)]
     val_cut = unique_dates[int(len(unique_dates) * 0.85)]
-    train = supervised[supervised[DATE_COL] < train_cut]
-    val = supervised[(supervised[DATE_COL] >= train_cut) & (supervised[DATE_COL] < val_cut)]
-    test = supervised[supervised[DATE_COL] >= val_cut]
+    # Split on the label date (tomorrow), not just the feature date, so no
+    # training label crosses into the validation/test future window.
+    train = supervised[supervised["target_date"] < train_cut]
+    val = supervised[(supervised["target_date"] >= train_cut) & (supervised["target_date"] < val_cut)]
+    test = supervised[supervised["target_date"] >= val_cut]
     if min(len(train), len(val), len(test)) == 0:
         raise ValueError("Chronological split produced an empty train, validation or test set.")
 
@@ -157,7 +160,7 @@ def _fit() -> dict[str, Any]:
     sample = []
     for _, row in test_rows.tail(12).iterrows():
         sample.append({
-            "date": row[DATE_COL].strftime("%Y-%m-%d"),
+            "date": row[DATE_COL].strftime("%Y-%m-%d"), "target_date": row["target_date"].strftime("%Y-%m-%d"),
             "tank_id": str(row[ID_COL]),
             "observed_next_day_scarcity_index": round(float(row["target_next_day"]), 5),
             "ml_prediction": round(float(row["model_prediction"]), 5),
@@ -176,9 +179,9 @@ def _fit() -> dict[str, Any]:
         "tank_count": int(frame[ID_COL].nunique()),
         "first_date": frame[DATE_COL].min().strftime("%Y-%m-%d"),
         "last_date": frame[DATE_COL].max().strftime("%Y-%m-%d"),
-        "train_period": {"start": train[DATE_COL].min().strftime("%Y-%m-%d"), "end": train[DATE_COL].max().strftime("%Y-%m-%d"), "rows": int(len(train))},
-        "validation_period": {"start": val[DATE_COL].min().strftime("%Y-%m-%d"), "end": val[DATE_COL].max().strftime("%Y-%m-%d"), "rows": int(len(val))},
-        "test_period": {"start": test[DATE_COL].min().strftime("%Y-%m-%d"), "end": test[DATE_COL].max().strftime("%Y-%m-%d"), "rows": int(len(test))},
+        "train_period": {"start": train["target_date"].min().strftime("%Y-%m-%d"), "end": train["target_date"].max().strftime("%Y-%m-%d"), "rows": int(len(train))},
+        "validation_period": {"start": val["target_date"].min().strftime("%Y-%m-%d"), "end": val["target_date"].max().strftime("%Y-%m-%d"), "rows": int(len(val))},
+        "test_period": {"start": test["target_date"].min().strftime("%Y-%m-%d"), "end": test["target_date"].max().strftime("%Y-%m-%d"), "rows": int(len(test))},
         "validation_mae_by_model": {k: round(v, 6) for k, v in validation_scores.items()},
         "test_ml": model_metrics,
         "test_baseline": baseline_metrics,
