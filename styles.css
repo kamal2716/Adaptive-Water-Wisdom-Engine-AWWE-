@@ -125,3 +125,11 @@
 @media(max-width:760px){.sim-tank-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.simulator-toolbar{align-items:flex-start;flex-direction:column}}
 @media(max-width:480px){.tank-simulator-card{padding:12px}.sim-tank-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.sim-tank-card{padding:10px 6px}.sim-summary-strip{grid-template-columns:1fr}.sim-summary-strip>div{padding:9px}.simulator-play-controls{width:100%}.simulator-play-controls button{flex:1}}
 @media(prefers-reduced-motion:reduce){.sim-tank-water,.sim-tank-card{transition:none}}
+
+/* Authority-only month range controls for tank playback */
+.sim-month-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:15px;padding:11px;background:#f1f3e8;border-radius:10px}
+.sim-month-controls label{font-size:9px;font-weight:700;color:#617563}
+.sim-month-controls select{min-width:105px;max-width:150px;padding:7px 9px;border:1px solid #dbe2d3;border-radius:7px;background:#fffdf7;color:#385343;font:600 10px 'DM Sans',sans-serif}
+.sim-month-controls button{padding:7px 11px;border:1px solid #9eb69b;border-radius:7px;background:#e1eadb;color:#365d43;font:700 10px 'DM Sans',sans-serif;cursor:pointer}
+.sim-month-controls button:hover{background:#d3e2ce}
+@media(max-width:480px){.sim-month-controls{align-items:stretch}.sim-month-controls label{align-self:center}.sim-month-controls select{flex:1;min-width:0;max-width:none}.sim-month-controls button{width:100%}}
