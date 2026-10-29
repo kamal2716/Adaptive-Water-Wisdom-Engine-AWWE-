@@ -1,10 +1,10 @@
 # AWWE Python ML Lab (experimental)
 
 This service trains a next-day scarcity-index regression model from
-`madurai_daily_hydrological_timeseries.csv` and compares it with a persistence
-baseline (tomorrow's index = today's index). It uses a chronological 70% train /
-15% validation / 15% test split. Candidate models are selected on validation
-MAE; the final test period is not used for model selection.
+`madurai_daily_hydrological_timeseries.csv`. It compares persistence, 3-day rolling
+average and 7-day rolling average baselines. It uses a chronological 70% train /
+15% validation / 15% test split. Model and baseline selection use validation MAE;
+the final test period is not used for model selection or feature ablation.
 
 ## Run locally
 
@@ -39,8 +39,14 @@ starting the server. The service exposes `GET /api/ml/status`,
 - The split is chronological; future dates are kept out of training.
 - Candidate model selection uses validation MAE. Test MAE/RMSE/R² is reported
   alongside the persistence baseline.
-- MAE lower than baseline means the model beats the baseline on this one holdout
-  only; it does not prove real-world performance.
+- MAE lower than the validation-selected baseline means the model beats that
+  baseline on this one holdout only; it does not prove real-world performance.
+- The API reports test MAE/RMSE/R² for all three baselines and per-tank test metrics.
+- Feature-group ablation is trained/evaluated on train/validation only. If removing
+  a group worsens validation MAE, the group may add predictive signal; this is not
+  causal proof.
+- All chronological test predictions are returned for inspection; the dashboard
+  summarizes performance for all tanks and shows representative predictions.
 - The API returns the last available date's next-day extrapolation only as an
   experiment. With the repository data ending in 2025, that is stale and must
   not be treated as a forecast for current conditions.
