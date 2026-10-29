@@ -400,10 +400,22 @@
     '<div class="ml-sample-wrap"><h4>Feature usefulness · validation ablation</h4><p>Each group is removed and retrained; this uses validation data only. Positive MAE change means removing that group made validation error worse. It is a diagnostic, not causal proof.</p><div class="ml-table-scroll"><table class="ml-table"><thead><tr><th>Removed group</th><th>Full MAE</th><th>MAE without group</th><th>Change</th><th>Interpretation</th></tr></thead><tbody>'+featureRows+'</tbody></table></div></div>'+
     '<div class="ml-sample-wrap"><h4>Test prediction examples across tanks</h4><p>One representative row per tank, with observed next-day index, ML, persistence and rolling baselines. Python retains all '+allPred.length+' test predictions in the API response.</p><div class="ml-table-scroll"><table class="ml-table"><thead><tr><th>Input date</th><th>Tank</th><th>Observed</th><th>ML</th><th>Persist</th><th>3-day avg</th><th>7-day avg</th></tr></thead><tbody>'+predictionRows+'</tbody></table></div></div>';
   }
+  function friendlyMlError(error){
+   const message=error?.message||"Could not connect";
+   const base=String(state.mlApiBase||"").toLowerCase();
+   const localApi=/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?/.test(base);
+   if(window.location.protocol==="https:"&&localApi){
+    return "This page is loaded over HTTPS, so the browser may block its connection to your local HTTP Python API. For local testing, serve the website over http://localhost too; for the deployed site, deploy the ML API to an HTTPS URL and enter that URL here.";
+   }
+   if(message==="Failed to fetch"||message==="Load failed"||message==="NetworkError when attempting to fetch resource."){
+    return "Could not reach the Python API. Confirm Uvicorn is running on the entered URL, then check browser CORS/network errors. Localhost URLs work only on this same computer.";
+   }
+   return message;
+  }
   async function loadMlStatus(){
    let base=String(state.mlApiBase||"http://127.0.0.1:8000").trim();while(base.endsWith("/"))base=base.slice(0,-1);state.mlApiBase=base;
    try{const response=await fetch(base+"/api/ml/status");const data=await response.json();if(!response.ok)throw new Error(data.detail||data.error||("HTTP "+response.status));if(data.status!=="evaluated")throw new Error(data.error||"Model is not ready");state.mlApiData=data;state.mlApiError="";renderMlLab(data);}
-   catch(error){state.mlApiData=null;state.mlApiError=error?.message||"Could not connect";renderMlLab(null);}
+   catch(error){state.mlApiData=null;state.mlApiError=friendlyMlError(error);renderMlLab(null);}
   }
   function bindMlLab(){
    const input=$("#ml-api-url"),connect=$("#ml-connect"),run=$("#ml-run-evaluation");if(!input)return;input.value=state.mlApiBase;
@@ -411,7 +423,7 @@
    if(connect)connect.addEventListener("click",()=>{baseFromInput();loadMlStatus();});
    if(run)run.addEventListener("click",async()=>{baseFromInput();run.disabled=true;run.textContent="Evaluating…";const box=$("#ml-status-box");if(box){box.className="ml-status-box offline";box.innerHTML="<strong>Running Python evaluation…</strong><p>Training candidates and checking the chronological holdout.</p>";}
     try{const response=await fetch(state.mlApiBase+"/api/ml/evaluate",{method:"POST",headers:{"Accept":"application/json"}});const data=await response.json();if(!response.ok)throw new Error(data.detail||data.error||("HTTP "+response.status));if(data.status!=="evaluated")throw new Error(data.error||"Evaluation did not complete");state.mlApiData=data;state.mlApiError="";renderMlLab(data);}
-    catch(error){state.mlApiData=null;state.mlApiError=error?.message||"Evaluation failed";renderMlLab(null);}finally{run.disabled=false;run.textContent="Run evaluation";}});
+    catch(error){state.mlApiData=null;state.mlApiError=friendlyMlError(error);renderMlLab(null);}finally{run.disabled=false;run.textContent="Run evaluation";}});
    loadMlStatus();
   }
   function panel(){
