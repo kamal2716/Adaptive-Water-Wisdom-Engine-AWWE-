@@ -203,7 +203,8 @@
   }
   function simulatorRecord(tankId,timestamp){return historicalRows.find(row=>row.tank_id===tankId&&row.timestamp===timestamp)||null;}
   function simulatorTankCards(timestamp){
-   return tanks.map(t=>{
+   const visibleTanks=state.role==="authority"?tanks:(state.tank?[state.tank]:[]);
+   return visibleTanks.map(t=>{
     const row=simulatorRecord(t.id,timestamp),storage=row?Number(row.current_storage_mcm):NaN,capacity=Number(t.capacity),level=Number.isFinite(storage)&&capacity>0?Math.max(0,Math.min(100,storage/capacity*100)):NaN;
     const full=Number.isFinite(level)&&level>=90,low=Number.isFinite(level)&&level<=20;
     const selected=t.id===state.tank.id,status=full?"Capacity watch":low?"Low storage watch":"Within screening range",statusClass=full?"high":low?"low":"steady";
@@ -221,7 +222,7 @@
    const live=$("#tank-simulator-live"),dates=simulatorDateRows();
    if(!live)return;
    if(!repositoryDataReady||!dates.length){live.innerHTML='<p class="chart-message">'+esc(repositoryDataError||"No historical tank readings are available for this month range.")+'</p>';return;}
-   const timestamp=dates[state.simDateIndex]??dates[0],rows=historicalRows.filter(row=>row.timestamp===timestamp);
+   const timestamp=dates[state.simDateIndex]??dates[0],rows=historicalRows.filter(row=>row.timestamp===timestamp&&(state.role==="authority"||row.tank_id===state.tank.id));
    const watchFull=rows.filter(row=>{const t=tanks.find(tank=>tank.id===row.tank_id);return t&&Number(t.capacity)>0&&Number(row.current_storage_mcm)/Number(t.capacity)>=.9;});
    const watchLow=rows.filter(row=>{const t=tanks.find(tank=>tank.id===row.tank_id);return t&&Number(t.capacity)>0&&Number(row.current_storage_mcm)/Number(t.capacity)<=.2;});
    const selectedRow=simulatorRecord(state.tank.id,timestamp),pctValue=selectedRow&&Number(state.tank.capacity)>0?Number(selectedRow.current_storage_mcm)/Number(state.tank.capacity)*100:NaN;
@@ -244,14 +245,21 @@
    translateWorkspace();
   }
   function tankFlowSimulator(){
-   const dates=simulatorDateRows(),max=Math.max(0,dates.length-1);
-   return '<section class="tank-simulator-section"><div class="authority-section-heading"><span>↗</span><div><h3>Interactive tank-flow simulator</h3><p>Move through the selected months day by day to compare recorded storage across all 12 tanks.</p></div></div>'+
-    '<div class="panel-card tank-simulator-card"><div class="simulator-toolbar"><div><span class="sim-kicker">HISTORICAL PLAYBACK</span><strong id="tank-sim-date-label">'+(dates.length?esc(shortDate(dates[state.simDateIndex]||dates[0])):"No dates available")+'</strong><small id="tank-sim-day-count">Day '+(dates.length?state.simDateIndex+1:0)+' of '+dates.length+'</small></div><div class="simulator-play-controls"><button type="button" class="toolbar-button" id="tank-sim-play" '+(dates.length<2?"disabled":"")+' aria-pressed="false">▶ Play</button><button type="button" class="toolbar-button secondary" id="tank-sim-pause" '+(dates.length<2?"disabled":"")+'>Ⅱ Pause</button></div></div>'+
+   const dates=simulatorDateRows(),max=Math.max(0,dates.length-1),authorityMode=state.role==="authority";
+   const monthOptions=Array.from({length:12},(_,i)=>'<option value="'+i+'" '+(i===state.chartStartMonth?"selected":"")+'>'+new Date(2025,i,1).toLocaleDateString("en-IN",{month:"long"})+'</option>').join("");
+   const endOptions=Array.from({length:12},(_,i)=>'<option value="'+i+'" '+(i===state.chartEndMonth?"selected":"")+'>'+new Date(2025,i,1).toLocaleDateString("en-IN",{month:"long"})+'</option>').join("");
+   const monthControls=authorityMode?'<div class="sim-month-controls"><label for="sim-from-month">From month</label><select id="sim-from-month">'+monthOptions+'</select><label for="sim-to-month">To month</label><select id="sim-to-month">'+endOptions+'</select><button type="button" id="sim-full-year">Full year</button></div>':'';
+   const subtitle=authorityMode?"Compare all 12 tanks across the selected historical period.":"View only the selected tank’s recorded water level for the chosen day.";
+   return '<section class="tank-simulator-section"><div class="authority-section-heading"><span>↗</span><div><h3>Interactive tank-flow simulator</h3><p>'+subtitle+'</p></div></div>'+
+    '<div class="panel-card tank-simulator-card">'+monthControls+'<div class="simulator-toolbar"><div><span class="sim-kicker">HISTORICAL PLAYBACK</span><strong id="tank-sim-date-label">'+(dates.length?esc(shortDate(dates[state.simDateIndex]||dates[0])):"No dates available")+'</strong><small id="tank-sim-day-count">Day '+(dates.length?state.simDateIndex+1:0)+' of '+dates.length+'</small></div><div class="simulator-play-controls"><button type="button" class="toolbar-button" id="tank-sim-play" '+(dates.length<2?"disabled":"")+' aria-pressed="false">▶ Play</button><button type="button" class="toolbar-button secondary" id="tank-sim-pause" '+(dates.length<2?"disabled":"")+'>Ⅱ Pause</button></div></div>'+
     '<label class="sim-date-label" for="tank-sim-date-slider">Recorded day within '+esc(monthRangeLabel())+'</label><input id="tank-sim-date-slider" class="sim-date-slider" type="range" min="0" max="'+max+'" value="'+Math.min(state.simDateIndex,max)+'" step="1" aria-label="Choose historical day"><div id="tank-simulator-live" aria-live="polite"></div></div></section>';
   }
   function bindTankSimulator(){
-   const slider=$("#tank-sim-date-slider"),play=$("#tank-sim-play"),pause=$("#tank-sim-pause");
+   const slider=$("#tank-sim-date-slider"),play=$("#tank-sim-play"),pause=$("#tank-sim-pause"),from=$("#sim-from-month"),to=$("#sim-to-month"),full=$("#sim-full-year");
    if(simulatorTimer){clearInterval(simulatorTimer);simulatorTimer=null;}
+   if(from)from.addEventListener("change",()=>{state.chartStartMonth=Number(from.value);if(state.chartStartMonth>state.chartEndMonth)state.chartEndMonth=state.chartStartMonth;state.simDateIndex=0;refresh();});
+   if(to)to.addEventListener("change",()=>{state.chartEndMonth=Number(to.value);if(state.chartEndMonth<state.chartStartMonth)state.chartStartMonth=state.chartEndMonth;state.simDateIndex=0;refresh();});
+   if(full)full.addEventListener("click",()=>{state.chartStartMonth=0;state.chartEndMonth=11;state.simDateIndex=0;refresh();});
    if(slider)slider.addEventListener("input",()=>{state.simDateIndex=Number(slider.value);updateSimulator();});
    if(play)play.addEventListener("click",()=>{
     const dates=simulatorDateRows();if(dates.length<2)return;
