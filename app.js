@@ -77,6 +77,9 @@
    "Tank-cascade channel condition":"நீர்நிலைத் தொடர் கால்வாய்களின் நிலை","All channel links and infrastructure scores loaded from madurai_channel_cascade_network.csv.":"அனைத்து கால்வாய் இணைப்புகளும் கட்டமைப்பு மதிப்பெண்களும் madurai_channel_cascade_network.csv கோப்பிலிருந்து ஏற்றப்பட்டுள்ளன.","Channel register · ":"கால்வாய் பதிவேடு · ","Designed":"வடிவமைக்கப்பட்ட கொள்ளளவு","Effective":"செயல்திறன் கொண்ட கொள்ளளவு","Capacity retained":"தக்கவைக்கப்பட்ட கொள்ளளவு","Encroachment":"ஆக்கிரமிப்பு","Structural-integrity score":"கட்டமைப்பு நிலைத்தன்மை மதிப்பெண்","Restoration-priority score":"மறுசீரமைப்பு முன்னுரிமை மதிப்பெண்","Channel length":"கால்வாய் நீளம்","Siltation label":"வண்டல் படிவு வகை","Review limitation:":"ஆய்வு வரம்பு:","The daily CSV spans 2025 and is historical, not live. Flood-risk and scarcity-risk indices require source-definition and validation checks before use in any public warning. Structural-integrity and restoration-priority scales should also be confirmed against their data dictionary.":"தினசரி CSV தரவு 2025 ஆம் ஆண்டைச் சார்ந்த வரலாற்றுப் பதிவுகள்; நேரடி தரவு அல்ல. பொதுமக்களுக்கான எச்சரிக்கைகளில் பயன்படுத்துவதற்கு முன் வெள்ள அபாயம் மற்றும் நீர் பற்றாக்குறைக் குறியீடுகளின் வரையறைகளும் சரிபார்ப்பும் உறுதிப்படுத்தப்பட வேண்டும். கட்டமைப்பு நிலைத்தன்மை மற்றும் மறுசீரமைப்பு முன்னுரிமை அளவுகோல்களும் தரவு அகராதியுடன் ஒப்பிட்டு உறுதிப்படுத்தப்பட வேண்டும்.",
    "Your PIN code":"உங்கள் PIN குறியீடு","Update area":"பகுதியைப் புதுப்பிக்கவும்","Switch workspace ↗":"பணியிடத்தை மாற்று ↗","Overview":"கண்ணோட்டம்","Trends & outlook":"போக்குகள் மற்றும் முன்னோக்கு","Recommended actions":"பரிந்துரைக்கப்படும் நடவடிக்கைகள்","Feedback & reports":"கருத்துகள் மற்றும் அறிக்கைகள்","Report category":"அறிக்கை வகை","Tank / nearby eri":"நீர்நிலை / அருகிலுள்ள ஏரி","Problem / report details":"பிரச்சினை / அறிக்கை விவரங்கள்","Submit report":"அறிக்கையைச் சமர்ப்பிக்கவும்","Send feedback":"கருத்தை அனுப்பவும்","What happens next":"அடுத்து என்ன நடக்கும்","My reports and replies":"எனது அறிக்கைகளும் பதில்களும்","No reports in this view yet":"இந்தப் பார்வையில் இன்னும் அறிக்கைகள் இல்லை","Received":"பெறப்பட்டது","In review":"ஆய்வில் உள்ளது","Resolved":"தீர்க்கப்பட்டது","Report status":"அறிக்கையின் நிலை"
   };
+
+  const simulatorTamil={"Interactive tank-flow simulator":"ஊடாடும் நீர்நிலை நீரோட்ட சிமுலேட்டர்","Move through the selected months day by day to compare recorded storage across all 12 tanks.":"தேர்ந்தெடுத்த மாதங்களில் தினந்தோறும் நகர்ந்து 12 நீர்நிலைகளின் பதிவுசெய்யப்பட்ட இருப்பை ஒப்பிடுங்கள்.","HISTORICAL PLAYBACK":"வரலாற்றுப் பதிவுகளின் இயக்கம்","Play":"இயக்கு","Playing":"இயங்குகிறது","Pause":"இடைநிறுத்து","Recorded day within ":"இதற்குள் பதிவான நாள்: ","Recorded date":"பதிவான தேதி","Capacity watch (≥90%)":"கொள்ளளவு கண்காணிப்பு (≥90%)","Low-storage watch (≤20%)":"குறைந்த நீர் இருப்பு (≤20%)","capacity":"கொள்ளளவு","Capacity watch":"கொள்ளளவு கண்காணிப்பு","Low storage watch":"குறைந்த நீர் இருப்பு கண்காணிப்பு","Within screening range":"முதற்கட்ட வரம்பிற்குள்","Flood index: ":"வெள்ளக் குறியீடு: "," · Scarcity: ":" · பற்றாக்குறை: ","Selected tank: capacity watch":"தேர்ந்தெடுத்த நீர்நிலை: கொள்ளளவு கண்காணிப்பு","Selected tank: low-storage watch":"தேர்ந்தெடுத்த நீர்நிலை: குறைந்த இருப்பு கண்காணிப்பு","Selected tank: continue observation":"தேர்ந்தெடுத்த நீர்நிலை: தொடர்ந்து கண்காணிக்கவும்","No historical tank readings are available for this month range.":"இந்த மாத வரம்பிற்கு வரலாற்று நீர்நிலைப் பதிவுகள் இல்லை.","Screening rules shown here (≥90% / ≤20%) are illustrative and not validated operating thresholds. Flood/scarcity index values are displayed exactly as recorded; no official risk classification is inferred. Dataset: historical daily records for 2025, not live telemetry.":"இங்கு காட்டப்படும் (≥90% / ≤20%) வரம்புகள் விளக்கத்திற்கானவை; செயல்பாட்டிற்கான சரிபார்க்கப்பட்ட வரம்புகள் அல்ல. வெள்ளம்/பற்றாக்குறை குறியீடுகள் பதிவில் உள்ளபடியே காட்டப்படுகின்றன; அதிகாரப்பூர்வ அபாய வகைப்பாடு செய்யப்படவில்லை. தரவு: 2025 தினசரி வரலாற்றுப் பதிவுகள்; நேரடி அளவீடுகள் அல்ல."};
+  Object.assign(farmerTamil,simulatorTamil);Object.assign(householdTamil,simulatorTamil);Object.assign(authorityTamil,simulatorTamil);
   function translateWorkspace(){
    if(state.farmerLanguage!=="ta")return;
    const dictionary=state.role==="farmer"?farmerTamil:(state.role==="household"?householdTamil:authorityTamil);
@@ -92,7 +95,8 @@
   }
 
   const loadReports=()=>{try{const raw=localStorage.getItem("awwe-reports")||sessionStorage.getItem("awwe-reports")||"[]";return JSON.parse(raw).map(r=>({...r,replies:Array.isArray(r.replies)?r.replies:(r.reply?[{text:r.reply,date:r.replyDate||""}]:[])}));}catch(_){return [];}};
-  const state={role:"household",panel:"overview",pin:"625003",tank:tanks[0],chart:null,charts:{},reports:loadReports(),reportFilter:"all",nextReportId:1,formNotice:"",chartStartMonth:0,chartEndMonth:11,farmerLanguage:"en"};
+  const state={role:"household",panel:"overview",pin:"625003",tank:tanks[0],chart:null,charts:{},reports:loadReports(),reportFilter:"all",nextReportId:1,formNotice:"",chartStartMonth:0,chartEndMonth:11,farmerLanguage:"en",simDateIndex:0};
+  let simulatorTimer=null;
   state.nextReportId=state.reports.reduce((max,r)=>Math.max(max,Number(r.id)||0),0)+1;
   const saveReports=()=>{try{localStorage.setItem("awwe-reports",JSON.stringify(state.reports));sessionStorage.setItem("awwe-reports",JSON.stringify(state.reports));}catch(_){state.formNotice="Browser storage is unavailable; export reports to preserve them.";}};
   let historicalRows=[];
@@ -190,6 +194,77 @@
    const guide='<div class="action-list"><div class="action-check"><span class="metric-chip critical">Flood risk</span><div><strong>Protect the field</strong><small>Check drainage and monitor official warnings.</small></div></div><div class="action-check"><span class="metric-chip warn">Low water</span><div><strong>Conserve irrigation</strong><small>Check soil moisture, crop stage and approved schedule.</small></div></div><div class="action-check"><span class="metric-chip">Normal</span><div><strong>Keep to the plan</strong><small>Follow normal irrigation while avoiding waste.</small></div></div><div class="action-check"><span class="metric-chip warn">Quality</span><div><strong>Confirm permitted use</strong><small>Irrigation suitability does not imply drinking-water safety.</small></div></div></div>';
    return '<div class="metric-grid">'+metric("CONNECTED TANK",esc(t.name),"PIN "+t.pin+" · repository tank metadata")+metric("LATEST RECORDED STORAGE",pct(t)+"%","Latest CSV storage ÷ listed capacity",level(t),tone(t))+metric("CROP WATER RISK","Needs inputs","Crop, soil moisture and forecast are not connected","Not assessed","warn")+'</div><div class="risk-banner"><span class="risk-badge">RISK CHECK</span><div><strong>Check conditions before irrigation.</strong><p>Field risk cannot be verified without a validated forecast, crop stage and local observations.</p></div></div><div class="panel-grid">'+card("Tank storage history","Daily historical readings from the repository CSV",canvas("main-chart"))+card("What should I do today?","Practical precautions",advice)+'</div>'+card("Simple risk guide","Conceptual guidance — not validated thresholds",guide);
   }
+
+  function simulatorDateRows(){
+   const dates=[...new Set(historicalRows.filter(row=>Number.isFinite(row.timestamp)&&new Date(row.timestamp).getMonth()>=state.chartStartMonth&&new Date(row.timestamp).getMonth()<=state.chartEndMonth).map(row=>row.timestamp))].sort((a,b)=>a-b);
+   if(dates.length&&state.simDateIndex>=dates.length)state.simDateIndex=dates.length-1;
+   if(state.simDateIndex<0)state.simDateIndex=0;
+   return dates;
+  }
+  function simulatorRecord(tankId,timestamp){return historicalRows.find(row=>row.tank_id===tankId&&row.timestamp===timestamp)||null;}
+  function simulatorTankCards(timestamp){
+   return tanks.map(t=>{
+    const row=simulatorRecord(t.id,timestamp),storage=row?Number(row.current_storage_mcm):NaN,capacity=Number(t.capacity),level=Number.isFinite(storage)&&capacity>0?Math.max(0,Math.min(100,storage/capacity*100)):NaN;
+    const full=Number.isFinite(level)&&level>=90,low=Number.isFinite(level)&&level<=20;
+    const selected=t.id===state.tank.id,status=full?"Capacity watch":low?"Low storage watch":"Within screening range",statusClass=full?"high":low?"low":"steady";
+    return '<button type="button" class="sim-tank-card '+(selected?"selected":"")+'" data-sim-tank="'+esc(t.id)+'" aria-pressed="'+selected+'">'+
+     '<span class="sim-tank-top"><strong>'+esc(t.name)+'</strong><small>'+esc(t.id)+'</small></span>'+
+     '<span class="sim-tank-vessel" aria-label="'+(Number.isFinite(level)?level.toFixed(1)+"% full":"No reading")+'"><span class="sim-tank-water" style="height:'+(Number.isFinite(level)?level:0)+'%"></span><span class="sim-tank-waterline"></span></span>'+
+     '<span class="sim-tank-percent">'+(Number.isFinite(level)?level.toFixed(1)+"%":"—")+' <small>capacity</small></span>'+
+     '<span class="sim-tank-storage">'+(Number.isFinite(storage)?storage.toFixed(2):"—")+' / '+(Number.isFinite(capacity)?capacity.toFixed(2):"—")+' MCM</span>'+
+     '<span class="sim-status '+statusClass+'">'+status+'</span>'+
+     '<span class="sim-tank-indices">Flood index: '+(row&&row.flood_risk_index!==""?esc(row.flood_risk_index):"—")+' · Scarcity: '+(row&&row.scarcity_risk_index!==""?esc(row.scarcity_risk_index):"—")+'</span>'+
+    '</button>';
+   }).join("");
+  }
+  function updateSimulator(){
+   const live=$("#tank-simulator-live"),dates=simulatorDateRows();
+   if(!live)return;
+   if(!repositoryDataReady||!dates.length){live.innerHTML='<p class="chart-message">'+esc(repositoryDataError||"No historical tank readings are available for this month range.")+'</p>';return;}
+   const timestamp=dates[state.simDateIndex]??dates[0],rows=historicalRows.filter(row=>row.timestamp===timestamp);
+   const watchFull=rows.filter(row=>{const t=tanks.find(tank=>tank.id===row.tank_id);return t&&Number(t.capacity)>0&&Number(row.current_storage_mcm)/Number(t.capacity)>=.9;});
+   const watchLow=rows.filter(row=>{const t=tanks.find(tank=>tank.id===row.tank_id);return t&&Number(t.capacity)>0&&Number(row.current_storage_mcm)/Number(t.capacity)<=.2;});
+   const selectedRow=simulatorRecord(state.tank.id,timestamp),pctValue=selectedRow&&Number(state.tank.capacity)>0?Number(selectedRow.current_storage_mcm)/Number(state.tank.capacity)*100:NaN;
+   let guidance;
+   if(Number.isFinite(pctValue)&&pctValue>=90)guidance='<strong>Selected tank: capacity watch</strong><p>Recorded storage is at least 90% of listed capacity. Verify current levels, rainfall forecasts, inflow, spillway condition and official instructions before taking action.</p>';
+   else if(Number.isFinite(pctValue)&&pctValue<=20)guidance='<strong>Selected tank: low-storage watch</strong><p>Recorded storage is at or below 20% of listed capacity. Farmers should check crop stage, soil moisture and approved irrigation schedules. This does not confirm household tap supply.</p>';
+   else guidance='<strong>Selected tank: continue observation</strong><p>Use recorded storage alongside rainfall, inflow, discharge, channel condition and local observations. This screen does not issue an official warning or confirm water quality.</p>';
+   $("#tank-sim-date-label").textContent=shortDate(timestamp);
+   $("#tank-sim-date-slider").max=String(Math.max(0,dates.length-1));
+   $("#tank-sim-date-slider").value=String(state.simDateIndex);
+   $("#tank-sim-date-slider").setAttribute("aria-valuetext",shortDate(timestamp));
+   $("#tank-sim-day-count").textContent="Day "+(state.simDateIndex+1)+" of "+dates.length;
+   live.innerHTML='<div class="sim-summary-strip"><div><span>Recorded date</span><strong>'+esc(shortDate(timestamp))+'</strong></div><div><span>Capacity watch (≥90%)</span><strong>'+watchFull.length+' tank'+(watchFull.length===1?"":"s")+'</strong></div><div><span>Low-storage watch (≤20%)</span><strong>'+watchLow.length+' tank'+(watchLow.length===1?"":"s")+'</strong></div></div>'+
+    '<div class="sim-tank-grid">'+simulatorTankCards(timestamp)+'</div><div class="sim-advisory"><span class="sim-advisory-icon">i</span><div>'+guidance+'</div></div>'+
+    '<p class="sim-method-note">Screening rules shown here (≥90% / ≤20%) are illustrative and not validated operating thresholds. Flood/scarcity index values are displayed exactly as recorded; no official risk classification is inferred. Dataset: historical daily records for 2025, not live telemetry.</p>';
+   live.querySelectorAll("[data-sim-tank]").forEach(btn=>btn.addEventListener("click",()=>{
+    const selected=tanks.find(t=>t.id===btn.dataset.simTank);
+    if(selected){state.tank=selected;state.pin=selected.pin;refresh();}
+   }));
+   translateWorkspace();
+  }
+  function tankFlowSimulator(){
+   const dates=simulatorDateRows(),max=Math.max(0,dates.length-1);
+   return '<section class="tank-simulator-section"><div class="authority-section-heading"><span>↗</span><div><h3>Interactive tank-flow simulator</h3><p>Move through the selected months day by day to compare recorded storage across all 12 tanks.</p></div></div>'+
+    '<div class="panel-card tank-simulator-card"><div class="simulator-toolbar"><div><span class="sim-kicker">HISTORICAL PLAYBACK</span><strong id="tank-sim-date-label">'+(dates.length?esc(shortDate(dates[state.simDateIndex]||dates[0])):"No dates available")+'</strong><small id="tank-sim-day-count">Day '+(dates.length?state.simDateIndex+1:0)+' of '+dates.length+'</small></div><div class="simulator-play-controls"><button type="button" class="toolbar-button" id="tank-sim-play" '+(dates.length<2?"disabled":"")+' aria-pressed="false">▶ Play</button><button type="button" class="toolbar-button secondary" id="tank-sim-pause" '+(dates.length<2?"disabled":"")+'>Ⅱ Pause</button></div></div>'+
+    '<label class="sim-date-label" for="tank-sim-date-slider">Recorded day within '+esc(monthRangeLabel())+'</label><input id="tank-sim-date-slider" class="sim-date-slider" type="range" min="0" max="'+max+'" value="'+Math.min(state.simDateIndex,max)+'" step="1" aria-label="Choose historical day"><div id="tank-simulator-live" aria-live="polite"></div></div></section>';
+  }
+  function bindTankSimulator(){
+   const slider=$("#tank-sim-date-slider"),play=$("#tank-sim-play"),pause=$("#tank-sim-pause");
+   if(simulatorTimer){clearInterval(simulatorTimer);simulatorTimer=null;}
+   if(slider)slider.addEventListener("input",()=>{state.simDateIndex=Number(slider.value);updateSimulator();});
+   if(play)play.addEventListener("click",()=>{
+    const dates=simulatorDateRows();if(dates.length<2)return;
+    if(simulatorTimer)clearInterval(simulatorTimer);
+    simulatorTimer=setInterval(()=>{const currentDates=simulatorDateRows();state.simDateIndex=state.simDateIndex>=currentDates.length-1?0:state.simDateIndex+1;updateSimulator();},1100);
+    play.setAttribute("aria-pressed","true");play.textContent="▶ Playing";
+   });
+   if(pause)pause.addEventListener("click",()=>{
+    if(simulatorTimer){clearInterval(simulatorTimer);simulatorTimer=null;}
+    if(play){play.setAttribute("aria-pressed","false");play.textContent="▶ Play";}
+   });
+   updateSimulator();
+  }
   function authority(){
    const capacity=tanks.reduce((s,t)=>s+t.capacity,0),stored=tanks.reduce((s,t)=>s+t.storage,0);
    const lats=tanks.map(t=>Number(t.latitude)).filter(Number.isFinite),lons=tanks.map(t=>Number(t.longitude)).filter(Number.isFinite);
@@ -221,6 +296,7 @@
    return '<div class="metric-grid authority-kpis">'+metric("TANK RECORDS",String(tanks.length),"Tank metadata loaded from repository CSV")+metric("RECORDED CAPACITY",capacity.toFixed(2)+" MCM","Sum of listed storage capacity")+metric("LATEST RECORDED STORAGE",num(stored,2)+" MCM",Math.round(stored/capacity*100)+"% of listed capacity · "+(repositoryLastDate?shortDate(repositoryLastDate):"date unavailable"),"Historical","warn")+metric("CHANNEL LINKS",String(channels.length),channelDataReady?"Loaded directly from cascade CSV":"Channel CSV not available")+'</div>'+
     '<div class="authority-section-heading"><span>01</span><div><h3>Tank register & selection</h3><p>Select any tank to inspect its recorded operating snapshot below.</p></div></div>'+
     '<div class="panel-grid authority-layout"><div>'+card("Tank cascade overview","All repository tanks · schematic relative positions, not a navigation map",'<div class="map-panel"><div class="map-art">'+markers+'</div><div class="map-legend"><span><i></i> Tank location</span><span>Choose a marker or tank in the register</span></div></div>'+tankIndex)+'</div><div>'+card("Selected tank · "+esc(t.name),"Tank ID "+esc(t.id)+" · PIN "+esc(t.pin),tankDetails)+'</div></div>'+
+    tankFlowSimulator()+
     '<div class="authority-section-heading"><span>02</span><div><h3>Hydrology & risk signals</h3><p>Historical observations for the selected tank and chosen month range.</p></div></div>'+
     '<div class="panel-grid authority-layout"><div>'+card("City-wide storage history","Daily aggregate across tanks · use the month controls to filter all authority charts.",canvas("main-chart"))+'</div></div>'+
     '<div class="panel-grid authority-layout"><div>'+card("Daily & cumulative rainfall","Daily rainfall is shown on the left axis; cumulative rainfall for the selected period is on the right.",chartOnly("authority-rain-chart"))+'</div><div>'+card("Inflow vs discharge","Inflow, irrigation outflow and spillway discharge use the same recorded flow unit (m³/s).",chartOnly("authority-flow-chart"))+'</div></div>'+
@@ -282,7 +358,7 @@
    const csv="\uFEFF"+[headers.map(csvCell).join(","),...rows].join("\r\n"),blob=new Blob([csv],{type:"text/csv;charset=utf-8;"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="AWWE_feedback_reports_"+new Date().toISOString().slice(0,10)+".csv";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
   }
   function panel(){
-    if(state.panel==="overview") return state.role==="authority" ? authority() : state.role==="farmer" ? farmer() : household();
+    if(state.panel==="overview") return state.role==="authority" ? authority() : (state.role==="farmer" ? farmer() : household()) + tankFlowSimulator();
     if(state.panel==="trends") return trends();
     if(state.panel==="actions") return actions();
     if(state.panel==="reports") return reports();
@@ -410,7 +486,7 @@
     refresh();
    });
   }
-  function refresh(){const root=$("#dash-panel");if(root){destroyCharts();root.innerHTML=panel();bindPanel();charts();translateWorkspace();const langButton=$("#farmer-language-toggle");if(langButton){langButton.hidden=false;langButton.textContent=state.farmerLanguage==="en"?"தமிழ்":"English";langButton.setAttribute("aria-label",state.farmerLanguage==="en"?"தமிழில் காண்க":"View in English");}const ta=state.farmerLanguage==="ta";const headers={household:["குடும்பம் / நீர் அணுகல்","குடும்ப நீர் நிலவரம்","உள்ளூர் நீர் நிலவரம் மற்றும் நீரைச் சிக்கனமாகப் பயன்படுத்துவதற்கான நடைமுறை வழிகாட்டுதல்."],farmer:["விவசாயம் / வயல் பணியிடம்","உங்கள் வயலுக்கான நீர் நிலவரம்","அபாயத்தைப் புரிந்துகொண்டு, இன்று எடுக்க வேண்டிய நடவடிக்கையைத் தீர்மானிக்கவும்."],authority:["திட்டமிடல் / அதிகாரிகள் பணியிடம்","மதுரை நீர்வளத் தகவல் மையம்","நீர்நிலைகள் மற்றும் கால்வாய்களின் நிலை, சாத்தியமான அபாயங்கள், முடிவெடுக்கும் விருப்பங்கள் ஆகியவற்றை ஆய்வு செய்யவும்."]};const h=headers[state.role];$("#dash-kicker").textContent=ta?h[0]:roles[state.role].label;$("#dashboard-title").textContent=ta?h[1]:roles[state.role].title;$("#dash-description").textContent=ta?h[2]:roles[state.role].description;const labels={overview:ta?"கண்ணோட்டம்":"Overview",trends:ta?"போக்குகள் மற்றும் முன்னோக்கு":"Trends & outlook",actions:ta?"பரிந்துரைக்கப்படும் நடவடிக்கைகள்":"Recommended actions",reports:ta?"கருத்துகள் மற்றும் அறிக்கைகள்":"Feedback & reports"};document.querySelectorAll(".side-link").forEach(b=>{const icon=b.querySelector("span");b.innerHTML=(icon?icon.outerHTML:"")+labels[b.dataset.panel];});$("#change-role").textContent=ta?"பணியிடத்தை மாற்று ↗":"Switch workspace ↗";}}
+  function refresh(){const root=$("#dash-panel");if(root){if(simulatorTimer){clearInterval(simulatorTimer);simulatorTimer=null;}destroyCharts();root.innerHTML=panel();bindPanel();bindTankSimulator();charts();translateWorkspace();const langButton=$("#farmer-language-toggle");if(langButton){langButton.hidden=false;langButton.textContent=state.farmerLanguage==="en"?"தமிழ்":"English";langButton.setAttribute("aria-label",state.farmerLanguage==="en"?"தமிழில் காண்க":"View in English");}const ta=state.farmerLanguage==="ta";const headers={household:["குடும்பம் / நீர் அணுகல்","குடும்ப நீர் நிலவரம்","உள்ளூர் நீர் நிலவரம் மற்றும் நீரைச் சிக்கனமாகப் பயன்படுத்துவதற்கான நடைமுறை வழிகாட்டுதல்."],farmer:["விவசாயம் / வயல் பணியிடம்","உங்கள் வயலுக்கான நீர் நிலவரம்","அபாயத்தைப் புரிந்துகொண்டு, இன்று எடுக்க வேண்டிய நடவடிக்கையைத் தீர்மானிக்கவும்."],authority:["திட்டமிடல் / அதிகாரிகள் பணியிடம்","மதுரை நீர்வளத் தகவல் மையம்","நீர்நிலைகள் மற்றும் கால்வாய்களின் நிலை, சாத்தியமான அபாயங்கள், முடிவெடுக்கும் விருப்பங்கள் ஆகியவற்றை ஆய்வு செய்யவும்."]};const h=headers[state.role];$("#dash-kicker").textContent=ta?h[0]:roles[state.role].label;$("#dashboard-title").textContent=ta?h[1]:roles[state.role].title;$("#dash-description").textContent=ta?h[2]:roles[state.role].description;const labels={overview:ta?"கண்ணோட்டம்":"Overview",trends:ta?"போக்குகள் மற்றும் முன்னோக்கு":"Trends & outlook",actions:ta?"பரிந்துரைக்கப்படும் நடவடிக்கைகள்":"Recommended actions",reports:ta?"கருத்துகள் மற்றும் அறிக்கைகள்":"Feedback & reports"};document.querySelectorAll(".side-link").forEach(b=>{const icon=b.querySelector("span");b.innerHTML=(icon?icon.outerHTML:"")+labels[b.dataset.panel];});$("#change-role").textContent=ta?"பணியிடத்தை மாற்று ↗":"Switch workspace ↗";}}
   function open(role){
    state.role=role||state.role;state.panel="overview";const info=roles[state.role],modal=$("#dashboard-modal");
    modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
